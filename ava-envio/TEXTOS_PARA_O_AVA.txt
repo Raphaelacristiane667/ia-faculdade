@@ -1,0 +1,59 @@
+COMO ENVIAR NO AVA
+==================
+Suba 1 arquivo por vez, nesta ordem.
+Em cada envio, cole no comentario/descricao do AVA o texto da atividade.
+
+
+--------------------------------------------------
+1) Arquivo: Atividade_01_PMC.txt
+--------------------------------------------------
+Atividade 1 - Perceptron Multicamadas (PMC)
+
+O programa implementa uma rede neural PMC com 3 entradas, 10 neuronios na camada escondida e 1 saida. Os dados seguem o padrao XOR, com bias -1. A rede usa funcao de ativacao sigmoide, calcula o erro (alvo - saida) e ajusta os pesos por backpropagation, com taxa de aprendizado 0,6, durante 10.000 epocas. Ao final, exibe as saidas previstas (yplot).
+
+
+--------------------------------------------------
+2) Arquivo: Atividade_02_PMC.txt
+--------------------------------------------------
+Atividade 2 - Perceptron Multicamadas (PMC) com 2 saidas
+
+O programa implementa um PMC com 3 entradas, 2 neuronios escondidos e 2 saidas. Os dados representam o XOR de 2 bits, e cada exemplo tem um par de saidas desejadas (00, 01, 01 e 10). Usa sigmoide nas duas camadas, backpropagation do erro e taxa 0,6. Treina por 100 epocas e mostra as duas saidas previstas para cada amostra.
+
+
+--------------------------------------------------
+3) Arquivo: Atividade_03_LVQ.txt
+--------------------------------------------------
+Atividade 3 - LVQ (Learning Vector Quantization)
+
+O programa classifica animais em 3 classes: 1 = mamifero, 2 = anfibio e 3 = reptil. As entradas sao: 4 patas, 2 patas, pelo, alimentacao e habitat. O LVQ calcula a distancia euclidiana ate cada prototipo, escolhe o vencedor (menor distancia) e, se acertou a classe, aproxima o prototipo do exemplo; se errou, afasta. A taxa de aprendizado comeca em 0,1 e diminui 1% por epoca, em 500 epocas. No teste, imprime o animal e a classe encontrada.
+
+
+--------------------------------------------------
+3b) Arquivo extra (so se o professor pedir a planilha):
+    Atividade_03_tabela_animais.xlsx
+--------------------------------------------------
+Planilha com os dados dos animais usados no LVQ (caracteristicas e classes).
+
+
+--------------------------------------------------
+4) Arquivo: Atividade_04_RBF.txt
+--------------------------------------------------
+Atividade 4 - Funcao de base radial (RBF / gaussiana)
+
+O programa usa uma gaussiana com 2 entradas e 1 centro. O centro comeca em (2, 2) e se aproxima dos pontos a cada amostra. A ativacao e phi = exp(-distancia). A cada passo, redesenha a superficie 3D da gaussiana, mostrando o pico se movendo ate a regiao dos dados.
+
+
+--------------------------------------------------
+5) Arquivo: Atividade_05_AG.txt
+--------------------------------------------------
+Atividade 5 - Algoritmo genetico (aquario)
+
+O programa usa algoritmo genetico para achar comprimento, largura e altura de um aquario com volume proximo de 100.000 cm3 (100 litros). A populacao tem 10 individuos, com medidas entre 10 e 100 cm. O custo e a diferenca absoluta entre o volume e 100.000. Ha reproducao pela media de dois pais, mutacao de 5% e 1000 epocas. Ao final, imprime as melhores dimensoes e o volume em litros.
+
+
+--------------------------------------------------
+6) Arquivo: Atividade_06_AG_restricoes.txt
+--------------------------------------------------
+Atividade 6 - Algoritmo genetico com restricoes (aquario)
+
+O programa aprimora o AG do aquario. A populacao tem 50 individuos e 2000 epocas. As medidas tem faixas: comprimento 60-100 cm, largura 30-50 cm e altura 25-40 cm. O custo considera o volume alvo de 100.000 cm3 e tambem a proporcao comprimento/altura proxima de 2,5. Usa selecao por torneio, cruzamento SBX, mutacao de 5% e elitismo (o melhor individuo sempre volta). Ao final, imprime dimensoes, volume e erro.
