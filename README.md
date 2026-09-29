@@ -25,6 +25,7 @@ PMC  →  PMC 2 saídas  →  LVQ  →  RBF  →  AG  →  AG com restrições
 | 4 | RBF / gaussiana | 2 entradas → 1 centro | `04-rbf-gaussiana` | `ava-envio/Atividade_04_RBF.txt` |
 | 5 | Algoritmo genético | aquário de 100 L | `05-algoritmo-genetico-aquario` | `ava-envio/Atividade_05_AG.txt` |
 | 6 | AG com restrições | volume + proporção 2,5 | `06-ag-aquario-restricoes` | `ava-envio/Atividade_06_AG_restricoes.txt` |
+| — | **Stewart 4.7 (trabalho IA)** | AG + derivada, ex. 1–78 | [`trabalho_IA/`](trabalho_IA/) | ver `trabalho_IA/README.md` |
 
 ---
 
@@ -116,5 +117,6 @@ ia-faculdade/
 ├── 04-rbf-gaussiana/
 ├── 05-algoritmo-genetico-aquario/
 ├── 06-ag-aquario-restricoes/
+├── trabalho_IA/             Stewart 4.7 — AG genérico + ex01..ex78
 └── ava-envio/               arquivos .txt para o AVA
 ```
