@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex39.sce — Copo conico cortado de disco raio 1: volume MAXIMO.
 // Base r, altura h = sqrt(1-r^2), V = pi*r^2*h/3.
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex39(x)
     rr = x(1)

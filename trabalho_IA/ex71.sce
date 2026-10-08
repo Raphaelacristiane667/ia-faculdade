@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex71.sce — tan(theta) = 2*x/(1+3*x^2). Maximizar theta (x > 0).
 // d/dx[2x/(1+3x^2)] = 0 => x = 1/sqrt(3), theta_max = arctan(1/sqrt(3)) = pi/6.
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex71(x)
     xx = x(1)

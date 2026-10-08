@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex34.sce — Cartaz 900 cm^2; margens 3 (base e lados) e 5 (topo).
 // Cartaz (w+6)*(h+8) = 900, maximizar area impressa w*h.
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex34(x)
     ww = x(1)

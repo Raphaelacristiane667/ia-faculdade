@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex63.sce — Perimetro 12: triangulo de area maxima e equilatero (lados 4).
 // AG em triangulo isosceles a=b=x, c=12-2x, area de Heron.
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex63(x)
     aa = x(1)

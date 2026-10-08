@@ -1,9 +1,9 @@
-// ex28.sce — Retangulo em triangulo retangulo (catetos 3 e 4), lados nos catetos.
+﻿// ex28.sce — Retangulo em triangulo retangulo (catetos 3 e 4), lados nos catetos.
 // Hipotenusa y = 4 - (4/3)*x. Area A = x*(4 - 4x/3).
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex28(x)
     xx = x(1)

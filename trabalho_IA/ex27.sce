@@ -1,10 +1,10 @@
-// ex27.sce — Triangulo isosceles inscrito no circulo r=1, area MAXIMA.
+﻿// ex27.sce — Triangulo isosceles inscrito no circulo r=1, area MAXIMA.
 // Vertice no topo (0,1), base em (sin(a), -cos(a)) e (-sin(a), -cos(a)).
 // Area = sin(a)*(1 + cos(a)), 0 < a < pi.
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex27(x)
     aa = x(1)

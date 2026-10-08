@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex42.sce — Forca F = mu*m*g/(mu*sin(theta)+cos(theta)), mu=0.5, minimizar F.
 // F'(theta)=0 => tan(theta) = mu => theta = arctan(0.5) ~ 26.57 graus.
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 mu = 0.5
 

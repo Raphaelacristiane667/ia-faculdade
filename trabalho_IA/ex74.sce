@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex74.sce — Pintura: maximizar angulo visual theta(x)=atan((d+h)/x)-atan(d/x).
 // theta'(x)=0 => x^2 = d*(d+h). Com h=2, d=1: x = sqrt(3) ~ 1.732 m.
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 h = 2
 d = 1

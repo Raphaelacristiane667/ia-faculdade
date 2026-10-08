@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex12.sce
 // Stewart 4.7 — Caixa sem tampa: chapa quadrada 3 m, corta quadrado x nos cantos.
 // Volume V(x) = x * (3 - 2x)^2, x > 0 e 3 - 2x > 0  =>  0 < x < 1.5
@@ -12,7 +12,7 @@ if ~isdef("RODANDO_MAIN") then
 end
 
 if ~isdef("ag") then
-    exec("ag_generico.sci", -1)
+    exec("carregar_ag.sci", -1)
 end
 
 function c = f_ex12(x)

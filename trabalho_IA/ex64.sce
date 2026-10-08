@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex64.sce — Moldura de pipa: lados externos a,a,b,b (figura so com letras).
 // Angulo 90 graus entre lados a e b => area maxima A = a*b.
 // Diagonal (a,a)-(b,b): sqrt(a^2+b^2); outra diagonal: 2ab/sqrt(a^2+b^2).
@@ -8,7 +8,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 a = 5
 b = 12

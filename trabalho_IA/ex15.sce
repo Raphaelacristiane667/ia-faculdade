@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex15.sce
 // Stewart 4.7 — 1200 cm^2 de material, caixa base quadrada sem tampa.
 // x^2 + 4xh = 1200  =>  h = (1200 - x^2)/(4x)
@@ -12,7 +12,7 @@ if ~isdef("RODANDO_MAIN") then
 end
 
 if ~isdef("ag") then
-    exec("ag_generico.sci", -1)
+    exec("carregar_ag.sci", -1)
 end
 
 function c = f_ex15(x)

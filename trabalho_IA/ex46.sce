@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex46.sce — Distancia ao quadrado minima: D^2 = 400*t^2 + 225*(t-1)^2.
 // d(D^2)/dt = 800t + 450(t-1) = 0 => t = 0.36 h (14h 21min 36s).
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex46(x)
     tt = x(1)

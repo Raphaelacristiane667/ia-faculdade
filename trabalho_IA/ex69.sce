@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex69.sce — Papel 30 cm (largura) x 20 cm (altura); canto superior direito
 // dobrado ate a borda inferior. x = cateto vertical do triangulo (borda direita),
 // y = comprimento do vinco. y^2 = x^3/(x-10), 10 < x <= 20.
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex69(x)
     xx = x(1)

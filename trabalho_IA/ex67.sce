@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex67.sce — Lei de Snell: A=(0,1), B=(2,-1), interface y=0, v1=3, v2=2.
 // Minimizar T(t)=sqrt(t^2+1)/v1+sqrt((2-t)^2+1)/v2. Comparar sen/v.
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 v1 = 3
 v2 = 2

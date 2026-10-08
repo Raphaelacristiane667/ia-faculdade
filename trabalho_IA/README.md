@@ -18,9 +18,15 @@ trabalho_IA/
 
 ## Como rodar
 
-1. Scilab → **File → Change current directory...** → pasta `trabalho_IA`
-2. Tudo: `exec("main.sce", -1)`
-3. Um exercício: `exec("ex01.sce", -1)`
+1. Use a pasta **`trabalho_IA` inteira** (precisa de `ag_generico.sci`, `carregar_ag.sci` e os `exNN.sce` juntos).  
+   Não rode só um arquivo copiado para Downloads com outro nome.
+2. Scilab → **File → Change current directory...** → pasta `trabalho_IA`
+3. Tudo: `exec("main.sce", -1)`
+4. Um exercício: `exec("ex02.sce", -1)`
+
+### Erro «Não é possível abrir o arquivo ag_generico.sci»
+
+O Scilab não está na pasta certa ou falta o `ag_generico.sci`. Abra o diretório do projeto no OneDrive/GitHub (`trabalho_IA`) e rode de lá. Os scripts chamam `carregar_ag.sci`, que tenta ajustar a pasta automaticamente.
 
 ## O que já está pronto
 

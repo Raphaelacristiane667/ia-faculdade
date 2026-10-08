@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex13.sce
 // Stewart 4.7 — Area 15000 m^2, retangulo dividido ao meio (cerca paralela).
 // xy = 15000  =>  y = 15000/x
@@ -12,7 +12,7 @@ if ~isdef("RODANDO_MAIN") then
 end
 
 if ~isdef("ag") then
-    exec("ag_generico.sci", -1)
+    exec("carregar_ag.sci", -1)
 end
 
 function c = f_ex13(x)

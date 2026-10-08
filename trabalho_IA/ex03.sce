@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex03.sce
 // Stewart 4.7 — Dois números POSITIVOS com produto 100 e soma MÍNIMA.
 // Restrição eliminada: y = 100/x
@@ -12,7 +12,7 @@ if ~isdef("RODANDO_MAIN") then
 end
 
 if ~isdef("ag") then
-    exec("ag_generico.sci", -1)
+    exec("carregar_ag.sci", -1)
 end
 
 function c = f_ex03(x)

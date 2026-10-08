@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex14.sce
 // Stewart 4.7 — Caixa base quadrada sem tampa, volume V = 32000 cm^3.
 // V = x^2 * h  =>  h = 32000/x^2
@@ -12,7 +12,7 @@ if ~isdef("RODANDO_MAIN") then
 end
 
 if ~isdef("ag") then
-    exec("ag_generico.sci", -1)
+    exec("carregar_ag.sci", -1)
 end
 
 function c = f_ex14(x)

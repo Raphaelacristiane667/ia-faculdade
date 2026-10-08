@@ -1,9 +1,9 @@
-// ex20.sce — Ponto de y = sqrt(x) mais proximo de (3, 0), x >= 0.
+﻿// ex20.sce — Ponto de y = sqrt(x) mais proximo de (3, 0), x >= 0.
 // d^2 = (x-3)^2 + (sqrt(x))^2 = x^2 - 5x + 9.
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex20(x)
     xx = x(1)

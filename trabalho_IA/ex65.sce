@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex65.sce — Cabos em P sobre AD (Stewart 4.7 #61, p.302).
 // A a 5 m de D; B a 2 m e C a 3 m de D (D entre B e C na horizontal).
 // L(x)=x+sqrt((5-x)^2+4)+sqrt((5-x)^2+9), x = AP (0<=x<=5). Minimizar L.
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex65(x)
     xx = x(1)

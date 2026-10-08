@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex43.sce — P = E^2*R/(R+r)^2, E=12, r=2. Enunciado pede "minimo", mas P>0
 // e dP/dR=0 no interior da MAXIMIZACAO: R=r=2, P=18 W.
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex43(x)
     RR = x(1)

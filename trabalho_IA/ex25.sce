@@ -1,9 +1,9 @@
-// ex25.sce — Retangulo inscrito em triangulo equilatero de lado L=1 (base na aresta).
+﻿// ex25.sce — Retangulo inscrito em triangulo equilatero de lado L=1 (base na aresta).
 // Altura H = sqrt(3)/2. Area A(b) = b*H*(1 - b/L) = (sqrt(3)/2)*b*(1-b).
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex25(x)
     bb = x(1)

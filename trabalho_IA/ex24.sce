@@ -1,9 +1,9 @@
-// ex24.sce — Retangulo inscrito na elipse x^2/9 + y^2/4 = 1 (a=3, b=2).
+﻿// ex24.sce — Retangulo inscrito na elipse x^2/9 + y^2/4 = 1 (a=3, b=2).
 // y = 2*sqrt(1 - x^2/9). Area A = 4*x*y = 8*x*sqrt(1 - x^2/9).
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex24(x)
     xx = x(1)

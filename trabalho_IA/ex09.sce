@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex09.sce
 // Stewart 4.7 — Y = k*N / (1 + N^2), achar N que MAXIMIZA Y.
 // Usamos k = 1, então Y = N / (1 + N^2). N > 0.
@@ -11,7 +11,7 @@ if ~isdef("RODANDO_MAIN") then
 end
 
 if ~isdef("ag") then
-    exec("ag_generico.sci", -1)
+    exec("carregar_ag.sci", -1)
 end
 
 k = 1

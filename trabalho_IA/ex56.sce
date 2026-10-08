@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex56.sce — Triangulo no 1o quadrante tangente a y = 4 - x^2 em x = a > 0.
 // Area A(a) = (a^2 + 4)^2 / (4*a). Minimo: a = 2/sqrt(3), A = 32*sqrt(3)/9.
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex56(x)
     aa = x(1)

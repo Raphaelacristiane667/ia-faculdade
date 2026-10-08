@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex50.sce — C(x) = 400*x + 800*sqrt(1+(6-x)^2), 0<=x<=6.
 // C'(x)=0 => x = 6 - 1/sqrt(3) ~ 5.423. AG com 200 geracoes (mais preciso).
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex50(x)
     xx = x(1)

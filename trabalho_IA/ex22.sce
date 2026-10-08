@@ -1,9 +1,9 @@
-// ex22.sce — Ponto de y = sen(x) mais proximo de (4, 2).
+﻿// ex22.sce — Ponto de y = sen(x) mais proximo de (4, 2).
 // Minimizar d^2 = (x-4)^2 + (sin(x)-2)^2. Conferencia por malha fina.
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex22(x)
     xx = x(1)

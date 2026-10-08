@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex72.sce — Calha: A(theta) = 100*sin(theta)*(1+cos(theta)).
 // A'(theta)=0 => cos(theta)=1/2 => theta=pi/3, A=75*sqrt(3) ~ 129.9 cm^2.
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex72(x)
     th = x(1)

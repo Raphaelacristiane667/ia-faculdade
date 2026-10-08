@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex17.sce
 // Stewart 4.7 — Igual ao 16, mas com TAMPA (mesmo material dos lados, 6 $/m^2).
 // V = 2x^2*h = 10  =>  h = 5/x^2
@@ -12,7 +12,7 @@ if ~isdef("RODANDO_MAIN") then
 end
 
 if ~isdef("ag") then
-    exec("ag_generico.sci", -1)
+    exec("carregar_ag.sci", -1)
 end
 
 function c = f_ex17(x)

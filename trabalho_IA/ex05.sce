@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex05.sce
 // Stewart 4.7 — Distância vertical MÁXIMA entre y = x+2 e y = x^2,
 // com -1 <= x <= 2.
@@ -12,7 +12,7 @@ if ~isdef("RODANDO_MAIN") then
 end
 
 if ~isdef("ag") then
-    exec("ag_generico.sci", -1)
+    exec("carregar_ag.sci", -1)
 end
 
 function c = f_ex05(x)

@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex33.sce — Pôster: area impressa fixa 384 (in^2), margens 4 (lados) e 6 (cima/baixo).
 // Minimizar area do cartaz (w+8)*(h+12) com w*h = 384, h = 384/w.
 // Otimo: impresso 16 x 24, cartaz 24 x 36.
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex33(x)
     ww = x(1)

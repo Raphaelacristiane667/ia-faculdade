@@ -1,9 +1,9 @@
-// ex21.sce — Elipse 4x^2 + y^2 = 4. Ponto mais DISTANTE de (1, 0).
+﻿// ex21.sce — Elipse 4x^2 + y^2 = 4. Ponto mais DISTANTE de (1, 0).
 // y = 2*sqrt(1 - x^2) (ramo superior). d^2 = (x-1)^2 + 4(1-x^2) = -3x^2 - 2x + 5.
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex21(x)
     xx = x(1)

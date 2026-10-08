@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex57.sce — Item (b) apenas. C(x) = 16000 + 200*x + 4*x^(3/2).
 // Custo medio CM(x) = C(x)/x = 16000/x + 200 + 4*sqrt(x).
 // CM'(x) = 0 => x^(3/2) = 8000 => x = 400, CM_min = 320.
@@ -7,7 +7,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex57(x)
     xx = x(1)

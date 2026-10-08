@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex37.sce — Lata sem tampa, volume 1000 (cm^3). Minimizar area.
 // V = pi*r^2*h = 1000, S = pi*r^2 + 2*pi*r*h = pi*r^2 + 2000/r.
 // Otimo: r = h = (1000/pi)^(1/3).
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex37(x)
     rr = x(1)

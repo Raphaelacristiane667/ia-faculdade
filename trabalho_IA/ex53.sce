@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex53.sce — Segmento no 1o quadrante (eixos) passando por (1,2): 1/a+2/b=1.
 // Comprimento L = sqrt(a^2+b^2), b = 2a/(a-1), a>1.
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex53(x)
     aa = x(1)

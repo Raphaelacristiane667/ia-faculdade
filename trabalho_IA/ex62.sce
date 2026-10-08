@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex62.sce — 100 apartamentos a $800; cada +$10 no aluguel perde 1 inquilino.
 // n = 100 - k, r = 800 + 10*k, receita R(k) = (100-k)(800+10*k).
 // R' = 200 - 20*k = 0 => k=10, r=900, n=90, R=81000.
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex62(x)
     kk = x(1)

@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex70.sce — Cano no corredor 3 m que dobra para 2 m (maior comprimento que passa).
 // L(theta) = 3/sin(theta) + 2/cos(theta), 0 < theta < pi/2.
 // Minimo: L = (3^(2/3) + 2^(2/3))^(3/2) ~ 7.02 m.
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex70(x)
     th = x(1)

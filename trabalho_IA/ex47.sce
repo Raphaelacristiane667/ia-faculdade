@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex47.sce — T(x) = sqrt(x^2+25)/6 + (5-x)/8, 0 <= x <= 5.
 // T'(x)=0 => x ~ 5.67 (fora do dominio); minimo em x=5, T ~ 1.179 h.
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex47(x)
     xx = x(1)

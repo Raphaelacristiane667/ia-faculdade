@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex78.sce — I(x)=1/(d^2+x^2)+1/(d^2+(10-x)^2), k=1.
 // (b) d=5: minimo em x=5; (c) d=10: x=5 maximo local;
 // (d) d_critico = 5*sqrt(3) ~ 8.66 (I''(5)=0).
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex78(x)
     xx = x(1)

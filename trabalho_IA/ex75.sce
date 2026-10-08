@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex75.sce — Retangulo L=4, W=3 circunscrito, angulo theta.
 // A(theta)=(L*cos(theta)+W*sin(theta))*(L*sin(theta)+W*cos(theta)).
 // Maximo em theta=pi/4: A=(L+W)^2/2=24.5.
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 L = 4
 W = 3

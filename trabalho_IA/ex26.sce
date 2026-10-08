@@ -1,9 +1,9 @@
-// ex26.sce — Trapezio isosceles inscrito no circulo r=1, base inferior = diametro (2).
+﻿// ex26.sce — Trapezio isosceles inscrito no circulo r=1, base inferior = diametro (2).
 // Base superior 2a, altura h, com a^2 + h^2 = 1. Area = (a+1)*h.
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex26(x)
     aa = x(1)

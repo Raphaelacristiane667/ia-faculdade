@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex76.sce — R(theta)=C[(a-b cotg theta)/r1^4 + b cossec theta/r2^4].
 // (b) Minimo: cos theta = (r2/r1)^4; (c) r2=(2/3)r1 => cos theta=16/81.
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 a = 1
 b = 1

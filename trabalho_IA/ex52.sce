@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex52.sce — Reta por (3,5) com interceptos a,b>0, area do 1o quadrante ab/2 MIN?
 // (Problema: area MINIMA positiva com 3/a+5/b=1 => a=6, b=10, y=-(5/3)x+10, area 30.)
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex52(x)
     aa = x(1)

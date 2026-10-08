@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex07.sce
 // Stewart 4.7 — Retângulo de perímetro 100 com área MÁXIMA.
 // 2(L + W) = 100  =>  L + W = 50  =>  W = 50 - L
@@ -12,7 +12,7 @@ if ~isdef("RODANDO_MAIN") then
 end
 
 if ~isdef("ag") then
-    exec("ag_generico.sci", -1)
+    exec("carregar_ag.sci", -1)
 end
 
 function c = f_ex07(x)

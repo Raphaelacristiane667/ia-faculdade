@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex55.sce — Tangente a y = 3/x no 1o quadrante em (a, 3/a).
 // Interceptos (2a, 0) e (0, 6/a). L^2 = 4*a^2 + 36/a^2.
 // Minimo: a^4 = 9 => a = sqrt(3), L = 2*sqrt(6).
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex55(x)
     aa = x(1)

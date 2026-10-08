@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex38.sce — Escada sobre cerca 2 m, a 1 m do predio. Comprimento MINIMO.
 // Pe da escada a x m do predio (x>1), passa por (1,2): H = 2x/(x-1).
 // L(x) = sqrt(x^2 + (2x/(x-1))^2).
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex38(x)
     xx = x(1)

@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex41.sce — Grupo B: cone/copo altura H=1, volume maximo do solido interno
 // (cilindro/corte em h) modelado por V(h)=pi*h*(1-h)^2, 0<h<1.
 // Maximo em h=1/3 (Stewart 4.7 #41).
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex41(x)
     hh = x(1)

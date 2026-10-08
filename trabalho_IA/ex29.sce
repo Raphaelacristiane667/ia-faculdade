@@ -1,9 +1,9 @@
-// ex29.sce — Cilindro inscrito na esfera r=1, volume MAXIMO.
+﻿// ex29.sce — Cilindro inscrito na esfera r=1, volume MAXIMO.
 // x = raio do cilindro, h = 2*sqrt(1-x^2). V = pi*x^2*h = 2*pi*x^2*sqrt(1-x^2).
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex29(x)
     xx = x(1)

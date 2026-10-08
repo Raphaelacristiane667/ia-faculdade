@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex04.sce
 // Stewart 4.7 — Dois números POSITIVOS com soma 16 e soma dos quadrados MÍNIMA.
 // Restrição eliminada: y = 16 - x
@@ -12,7 +12,7 @@ if ~isdef("RODANDO_MAIN") then
 end
 
 if ~isdef("ag") then
-    exec("ag_generico.sci", -1)
+    exec("carregar_ag.sci", -1)
 end
 
 function c = f_ex04(x)

@@ -1,9 +1,9 @@
-// ex31.sce — Cilindro inscrito na esfera r=1, superficie TOTAL maxima.
+﻿// ex31.sce — Cilindro inscrito na esfera r=1, superficie TOTAL maxima.
 // S = 2*pi*x*(h + x), com h = 2*sqrt(1-x^2).
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex31(x)
     xx = x(1)

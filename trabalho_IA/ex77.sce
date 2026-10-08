@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex77.sce — Energia E(x)=1.4*sqrt(25+x^2)+(13-x), x = distancia de B (km).
 // E'(x)=0 => x/sqrt(25+x^2)=L/W; no item (a) W/L=1.4 => x ~ 5.10 km.
 // (b) condicao de minimo: x/sqrt(25+x^2)=L/W.
@@ -7,7 +7,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 WL_a = 1.4
 

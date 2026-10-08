@@ -1,9 +1,9 @@
-// ex30.sce — Cilindro inscrito no cone (h=1, r=1), volume MAXIMO.
+﻿// ex30.sce — Cilindro inscrito no cone (h=1, r=1), volume MAXIMO.
 // Raio do cilindro x = 1 - h (cone unitario). V = pi*x^2*h = pi*h*(1-h)^2.
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex30(x)
     hh = x(1)

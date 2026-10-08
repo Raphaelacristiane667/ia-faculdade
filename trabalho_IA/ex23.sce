@@ -1,9 +1,9 @@
-// ex23.sce — Retangulo de area maxima inscrito em circulo de raio 1.
+﻿// ex23.sce — Retangulo de area maxima inscrito em circulo de raio 1.
 // A(x) = 4*x*sqrt(1-x^2), 0 < x < 1.
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex23(x)
     xx = x(1)

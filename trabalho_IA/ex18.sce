@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex18.sce — Grupo B: verificacao numerica (demonstracao em explicacoes.md).
 // (a) Area 100 -> perimetro minimo: quadrado 10x10, P=40.
 // (b) Perimetro 100 -> area maxima: quadrado 25x25, A=625.
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex18a(x)
     xx = x(1)

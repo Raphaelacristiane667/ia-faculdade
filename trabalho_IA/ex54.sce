@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex54.sce — y = 1 + 40*x^3 - 3*x^5. Inclinacao da tangente y' = 120*x^2 - 15*x^4.
 // Maximizar y': y'' = 240*x - 60*x^3 = 0 => x = +/-2 (x=0 e minimo local).
 // y'(2) = 240; pontos (2,225) e (-2,-223).
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex54(x)
     xx = x(1)

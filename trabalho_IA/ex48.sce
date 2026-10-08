@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex48.sce — Lago raio 3 km: caminha 6 km/h, rema 3 km/h.
 // Parametro theta in [0,pi]: caminha arco (pi-theta)*3, rema 2*3*sin(theta/2).
 // T(theta) = (pi-theta)/2 + 2*sin(theta/2); minimo em theta=0 => T = pi/2 h.
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex48(x)
     th = x(1)

@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex73.sce — Maximizar angulo theta; P em AB vertical (comprimento 3).
 // Distancia horizontal: 2 na altura de B, 5 na altura de A.
 // x = |AP|, 0<=x<=3: theta(x)=atan((3-x)/2)+atan(x/5).
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 AB = 3
 hA = 5

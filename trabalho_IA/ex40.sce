@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex40.sce — Copo conico V=27 cm^3, minimizar area do papel (lateral).
 // V = pi*r^2*h/3 = 27 => h = 81/(pi*r^2). S = pi*r*sqrt(r^2+h^2).
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex40(x)
     rr = x(1)

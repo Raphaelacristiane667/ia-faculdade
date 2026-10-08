@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex66.sce — Consumo c(v) (Stewart #62, p.302): grafico sem dados numericos no livro.
 // Modelo APROXIMADO apenas para ilustrar a forma da curva (nao e dado do enunciado).
 // G(v)=c(v)/v: minimo quando a reta pela origem e tangente a c(v).
@@ -7,7 +7,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 // c(v) aproximada (km/h): minimo perto de 50, sobe em baixas e altas velocidades
 function c = c_aprox(v)

@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex45.sce — Area S(theta), s=1, h=2:
 //   S = 6sh - (3/2)s^2 cotg(theta) + (3s^2*sqrt(3)/2) cossec(theta)
 //     = 12 - (3/2)cot(theta) + (3*sqrt(3)/2)cossec(theta).
@@ -10,7 +10,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex45(x)
     th = x(1)

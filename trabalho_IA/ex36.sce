@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex36.sce — Fio 10 m: quadrado (s) + circulo (r). 4s + 2*pi*r = 10.
 // (a) tudo no circulo: A = 25/pi ~ 7.96. (b) area MINIMA com reparto.
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex36(x)
     ss = x(1)

@@ -1,11 +1,11 @@
-// =============================================================================
+﻿// =============================================================================
 // ex68.sce — Corda entre postes (0,a) e (d,b); comprimento minimo quando theta1=theta2.
 // L(x)=sqrt(x^2+a^2)+sqrt((d-x)^2+b^2). a=2, b=3, d=5.
 // =============================================================================
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 a = 2
 b = 3

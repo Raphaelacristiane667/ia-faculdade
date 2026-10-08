@@ -19,7 +19,7 @@ try
 catch
 end
 
-exec("ag_generico.sci", -1)
+exec("carregar_ag.sci", -1)
 
 if ~isempty(fileinfo("resultados.txt")) then
     mdelete("resultados.txt")

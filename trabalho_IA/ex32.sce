@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex32.sce — Janela normanda: semicirculo + retangulo, perimetro 10 (max area).
 // Largura 2r, altura do retangulo h, P = 2r + 2h + pi*r = 10.
 // A(r) = 2*r*h + pi*r^2/2, com h = (10 - r*(2+pi))/2.
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex32(x)
     rr = x(1)

@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // ex35.sce — Fio 10 m: quadrado (lado s) + triangulo equilatero (lado t).
 // 4s + 3t = 10. (a) tudo no quadrado: s=2.5, A=6.25.
 // (b) area total MINIMA: A(s) = s^2 + (sqrt(3)/4)*((10-4s)/3)^2.
@@ -6,7 +6,7 @@
 
 clc
 if ~isdef("RODANDO_MAIN") then clear; clc; end
-if ~isdef("ag") then exec("ag_generico.sci", -1); end
+if ~isdef("ag") then exec("carregar_ag.sci", -1); end
 
 function c = f_ex35(x)
     ss = x(1)
