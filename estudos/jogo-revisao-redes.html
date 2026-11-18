@@ -367,8 +367,8 @@ const TRACKS = [
   ]}
   ]
 },
-{ id:"net", tab:"Redes 2 · Packet Tracer", label:"salto", tag:"Redes",
-  intro:"Os cenários do laboratório, salto por salto: comandos, cabos, rotas e por que cada coisa está ali.",
+{ id:"net", tab:"Redes 2", label:"salto", tag:"Redes",
+  intro:"Redes 2 no Packet Tracer. Os cenários do laboratório, salto por salto: comandos, cabos, rotas e por que cada coisa está ali.",
   cola:[
     "<code>clock rate</code> vai na ponta <b>DCE</b> do cabo serial. Se der erro, a DCE está do outro lado.",
     "Enlace ponto a ponto: <code>255.255.255.252</code> (/30), 2 hosts.",
@@ -635,6 +635,481 @@ broadcast 172.19.255.255</span>
 192.168.5.100 com 10 usuários → 192.168.5.109</span>`
 };
 
+
+/* ---------- geradores: CineSugere ---------- */
+G.statusCode = () => {
+  const c = pick([
+    ["POST /api/avaliacoes com nota 11", "400 Bad Request", "A regra da nota (0 a 10) está no AvaliacaoService, que lança ValidacaoException. O ApiServlet transforma em 400."],
+    ["POST /api/filmes com \"titulo\": \"\"", "400 Bad Request", "Título vazio: o FilmeService.validar lança ValidacaoException(\"O título é obrigatório.\"), que vira 400."],
+    ["POST /api/filmes com JSON quebrado (faltando uma chave)", "400 Bad Request", "JsonParseException cai no mesmo catch da ValidacaoException e vira 400 com \"JSON inválido.\""],
+    ["GET /api/filmes/999 (filme que não existe)", "404 Not Found", "O DAO devolve Optional vazio, o Service lança RecursoNaoEncontradoException e isso vira 404."],
+    ["POST /api/categorias com nome \"ação\" quando já existe \"Ação\"", "409 Conflict", "O CategoriaService compara com LOWER(nome) e lança ConflitoException: vira 409."],
+    ["DELETE /api/filmes/3 sendo que o filme 3 tem avaliações", "409 Conflict", "FilmeService.excluir conta as avaliações e lança ConflitoException pedindo para apagá-las antes."],
+    ["DELETE /api/filmes/3 de um filme sem avaliações", "204 No Content", "Deu certo e não há nada para devolver no corpo, então o controller chama semConteudo."],
+    ["POST /api/filmes com { \"titulo\": \"Duna\", \"anoLancamento\": 2021 }", "201 Created", "Criou um recurso: o método criado responde 201 e coloca o cabeçalho Location com o endereço novo."],
+    ["GET /api/categorias/5/sugestoes", "200 OK", "Buscar ou listar que deu certo responde 200, com o ranking em JSON."],
+    ["PUT /api/filmes/6 com dados válidos", "200 OK", "Atualizar com sucesso responde 200 com o filme atualizado."],
+    ["DELETE /api/filmes (sem id)", "405 Method Not Allowed", "Sem id o controller chama super.delete, que lança MetodoNaoPermitidoException: vira 405."],
+    ["GET /api/filmes com o MySQL fora do ar", "500 Internal Server Error", "Erro inesperado cai no catch(Exception): registra no log e responde 500 \"Erro interno no servidor.\""],
+    ["GET /api/filmes/abc", "400 Bad Request", "O método id() tenta Integer.parseInt; \"abc\" ou \"-1\" geram ValidacaoException(\"Id inválido\"), que vira 400."]
+  ]);
+  const all = ["200 OK","201 Created","204 No Content","400 Bad Request","404 Not Found","405 Method Not Allowed","409 Conflict","500 Internal Server Error"];
+  const wrong = shuffle(all.filter(x=>x!==c[1])).slice(0,3);
+  return { t:"mc", q:`Que código de status a API do CineSugere devolve para: <code>${c[0]}</code>?`, o:[c[1], ...wrong], exp:c[2] };
+};
+G.ranking = () => {
+  const filmes = shuffle(["Matrix","Interestelar","Duna","Toy Story","Coringa","Up","Parasita","Alien"]).slice(0,3);
+  const cat = pick(["Ficção Científica","Animação","Drama","Suspense"]);
+  const notas = filmes.map(()=>{ const n = 2 + Math.floor(Math.random()*3); return Array.from({length:n},()=>4+Math.floor(Math.random()*7)); });
+  const medias = notas.map(ns=>ns.reduce((a,b)=>a+b,0)/ns.length);
+  const ord = filmes.map((f,i)=>({f, m:medias[i]})).sort((a,b)=>b.m-a.m || a.f.localeCompare(b.f));
+  const top = ord[0];
+  return { t:"num",
+    q:`Avaliações na categoria <b>${cat}</b>:<span class="f">${filmes.map((f,i)=>`${f}: ${notas[i].join(", ")}`).join("\n")}</span>O endpoint <code>GET /api/categorias/{id}/sugestoes</code> faz <code>AVG(nota)</code> por filme e ordena da maior média para a menor. Qual é a <b>média do 1º colocado</b>?`,
+    fields:[{label:"média do 1º =", ans:top.m}],
+    hint:"Para cada filme, some as notas e divida pela quantidade. O 1º é o de maior média.",
+    exp:`<span class="f">${ord.map((o,k)=>`${k+1}. ${o.f}: média ${fmt(o.m)}`).join("\n")}</span>É o que o SQL faz: JOIN filmes com avaliacoes, WHERE categoria_id = ?, GROUP BY filme, AVG(nota) AS media, ORDER BY media DESC, titulo.` };
+};
+
+const CINE_TRACK = { id:"cine", tab:"CineSugere", label:"parte", tag:"T2",
+  intro:"O projeto de Aplicações para Internet (T2): API RESTful + site em Java MVC. Da ideia geral até as perguntas que o professor pode fazer na apresentação.",
+  cola:[
+    "Em uma frase: o usuário cadastra filmes e categorias, dá notas de 0 a 10 e o sistema sugere os melhores de cada categoria pela <b>média</b>.",
+    "Dois projetos: <code>api/</code> (JSON + banco) e <code>web/</code> (telas que chamam a API). O site <b>nunca</b> acessa o banco.",
+    "Camadas: Controller (garçom, HTTP) → Service (cozinheiro, regras) → DAO (estoquista, SQL) → MySQL.",
+    "Erros: ValidacaoException 400, RecursoNaoEncontradoException 404, ConflitoException 409, qualquer outra 500.",
+    "Regras: título até 150 e ano entre 1888 e ano atual + 5; categoria até 100 e sem repetir; nota de 0 a 10.",
+    "Segurança: <code>PreparedStatement</code> contra SQL Injection e <code>&lt;c:out&gt;</code> contra XSS.",
+    "Documentação: Swagger em <code>/api/docs/</code>, Postman em <code>api/docs/</code> e o README. Testes: JUnit no Service com H2."
+  ],
+  phases:[
+  { title:"Conceitos básicos", sub:"API, REST, CRUD, JSON, status, MVC", qs:[
+    {t:"mc", q:"Na analogia do restaurante, quem é a API?", o:["O garçom: a porta de entrada que recebe o pedido e traz a resposta","A cozinha","O cliente","A despensa"], exp:"O cliente não entra na cozinha; faz o pedido ao garçom. A API é essa porta de entrada pela qual outros programas pedem coisas ao sistema."},
+    {t:"mc", q:"Em REST, o que diz <b>o que você quer fazer</b> com um recurso?", o:["O método HTTP (o verbo): GET, POST, PUT ou DELETE","O nome do arquivo .java","A porta 8080","O formato JSON"], exp:"Cada coisa tem um endereço (URL), e a ação é dita pelo verbo HTTP."},
+    {t:"mc", q:"<code>PUT /api/filmes/3</code> faz o quê, e qual é a letra do CRUD?", o:["Atualiza o filme 3 (Update)","Cria o filme 3 (Create)","Lê o filme 3 (Read)","Apaga o filme 3 (Delete)"], exp:"GET = Read, POST = Create, PUT = Update, DELETE = Delete."},
+    {t:"mc", q:"Qual a diferença entre POST e PUT?", o:["POST cria um recurso novo e o servidor escolhe o id; PUT atualiza um que já existe, com o id na URL","São iguais","POST apaga e PUT cria","PUT só funciona no Postman"], exp:"É uma das perguntas que o professor pode fazer."},
+    {t:"mc", q:"Como se escreve uma lista em JSON?", o:["Entre colchetes [ ... ]","Entre parênteses ( ... )","Entre aspas simples","Separada por ponto e vírgula, sem delimitador"], exp:"Objeto entre chaves { }, lista entre colchetes [ ]."},
+    {t:"mc", q:"Dica para lembrar dos códigos de status:", o:["2xx sucesso, 4xx culpa de quem pediu, 5xx culpa do servidor","2xx erro, 4xx sucesso, 5xx aviso","Todos os erros são 500","4xx é sempre falta de internet"], exp:"200, 201 e 204 são sucesso. 400, 404 e 409 são problema no pedido. 500 é erro do servidor."},
+    {t:"mc", q:"Por que o DELETE devolve 204 e não 200?", o:["Deu certo, mas não há nada para devolver no corpo: 204 é sucesso sem conteúdo","Porque falhou","Porque 200 é só para GET","Porque o Tomcat não aceita 200 em DELETE"], exp:"204 No Content significa exatamente sucesso sem corpo."},
+    {t:"mc", q:"No MVC, quem é o <b>V</b> no caso da API?", o:["O JSON que volta na resposta (no site, as telas JSP)","O banco MySQL","O Service","O pom.xml"], exp:"Model são os dados, View é o que a pessoa vê (JSP no site, JSON na API) e Controller recebe o pedido e decide o que fazer."},
+    {gen:"statusCode"}
+  ]},
+  { title:"Estrutura e camadas", sub:"api/ × web/, pastas, o caminho de um POST", qs:[
+    {t:"mc", q:"Por que a API e o site são projetos separados?", o:["Para a API não depender do site: amanhã um app de celular pode usar a mesma API sem mexer nela","Porque o Java não deixa juntar","Para usar dois bancos","Porque o Docker exige"], exp:"O site é só um cliente da API, como o Postman. Ele nunca acessa o banco direto."},
+    {t:"mc", q:"Qual camada aplica a regra \"a nota tem que ser de 0 a 10\"?", o:["Service (o cozinheiro)","Controller (o garçom)","DAO (o estoquista)","A JSP"], exp:"Regras de negócio ficam no Service. O Controller só lida com HTTP e o DAO só busca e guarda."},
+    {t:"mc", q:"O que o DAO faz?", o:["Fala SQL com o banco: inserir, listar, buscarPorId, atualizar, excluir","Valida as regras de negócio","Recebe o pedido HTTP","Desenha as telas"], exp:"DAO = Data Access Object. Se trocarem o MySQL, só os DAOs mudam; Service e Controller continuam iguais."},
+    {t:"mc", q:"A pasta <code>web/</code> não tem <code>dao/</code> nem <code>service/</code>. O que ela tem no lugar?", o:["client/: ApiClient, FilmeClient… que pedem tudo para a API por HTTP","Uma cópia do banco","Os mesmos DAOs da API","Nada: o site não busca dados"], exp:"O site não fala com o banco e não tem regras. Os clients fazem chamadas HTTP para a API."},
+    {t:"mc", q:"<code>main</code> em <code>src/main</code> é o quê?", o:["Só o nome de uma pasta (padrão Maven). Quem liga o sistema é o Tomcat","O método public static void main","Um servidor","O banco de dados"], exp:"Não existe método main no projeto. O Tomcat lê o api.war e chama as classes com @WebServlet, @WebListener e @WebFilter."},
+    {t:"mc", q:"Para que serve o <code>EncodingFilter</code>?", o:["Roda antes de todo pedido e garante UTF-8, para os acentos (\"Ação\") não virarem símbolos estranhos","Filtra filmes por nota","Bloqueia SQL Injection","Faz login"], exp:"Um filtro é uma classe que roda antes de todo pedido chegar ao controller."},
+    {t:"mc", q:"A pasta <code>target/</code>:", o:["É gerada pelo Maven ao compilar (classes .class e api.war) e não vai para o GitHub","Guarda os testes","Tem as telas JSP","Tem o init.sql"], exp:"Pode apagar sem medo: o mvn package cria de novo. Está no .gitignore."},
+    {t:"ord", q:"Ordene o caminho de <code>POST /api/filmes</code> com Duna (2021).", items:["FilmeApiController.post lê o JSON e monta um Filme (lerFilme)","FilmeService.criar valida: título e ano entre 1888 e ano atual + 5","FilmeDAO.inserir executa INSERT INTO filmes ... VALUES (?, ?)","A resposta volta: 201 Created, Location /api/filmes/6 e o filme em JSON"], exp:"Controller → Service → DAO → resposta. É o roteiro da parte \"camadas\" da apresentação."},
+    {t:"vf", q:"O site acessa o MySQL direto quando precisa de dados mais rápido.", a:false, exp:"Falso. O site nunca acessa o banco: ele sempre pede para a API."}
+  ]},
+  { title:"Regras, erros e endpoints", sub:"Service, exceções, rotas e sugestões", qs:[
+    {t:"mc", q:"Quais são as regras do <b>filme</b>?", o:["Título obrigatório com até 150 caracteres; ano entre 1888 e o ano atual + 5","Título com até 100 caracteres; ano livre","Título opcional; ano a partir de 1900","Título único; ano até o ano atual"], exp:"1888 é o primeiro filme da história. O ano máximo é Year.now() + 5."},
+    {t:"mc", q:"E a da <b>categoria</b>?", o:["Nome obrigatório com até 100 caracteres e sem repetir (\"Ação\" e \"ação\" contam como iguais)","Nome com até 150 caracteres, pode repetir","Nome numérico","Não tem regra"], exp:"O CategoriaService busca com LOWER(nome) = LOWER(?) e lança ConflitoException se já existir."},
+    {t:"mc", q:"Renomear \"Drama\" para \"Drama\" (ela mesma) dá conflito?", o:["Não: o idAtual faz a própria categoria não contar como repetida","Sim, sempre dá 409","Dá 404","Dá 500"], exp:"A condição é existente.get().getId() != idAtual."},
+    {t:"mc", q:"Quem transforma <code>ValidacaoException</code> em 400?", o:["O ApiServlet, a classe mãe dos controllers","O FilmeService","O FilmeDAO","O Tomcat sozinho"], exp:"O Service não sabe nada de HTTP: só lança exceções com nomes que dizem o problema. O ApiServlet traduz para o código."},
+    {t:"mc", q:"Qual é o formato da resposta de erro?", o:["{ \"status\": 400, \"erro\": \"O título é obrigatório.\" }","Uma página HTML de erro","Só o número 400, sem corpo","{ \"ok\": false }"], exp:"Sempre status e erro. O site lê o campo \"erro\" e mostra a mensagem em vermelho."},
+    {t:"mc", q:"Qual endpoint mostra o ranking de uma categoria?", o:["GET /api/categorias/{id}/sugestoes","GET /api/filmes/ranking","POST /api/sugestoes","GET /api/avaliacoes/{id}"], exp:"É a parte mais legal para mostrar na demonstração."},
+    {t:"mc", q:"Como filtrar avaliações de um filme?", o:["GET /api/avaliacoes?filmeId=1","GET /api/filmes/1/avaliacoes","POST /api/avaliacoes/filtrar","GET /api/avaliacoes/filme=1"], exp:"A listagem de avaliações aceita ?filmeId= e ?categoriaId=."},
+    {t:"mc", q:"O que o ApiServlet faz com <code>/5/sugestoes</code>?", o:["Quebra em partes: [\"5\", \"sugestoes\"]","Converte em JSON","Apaga a categoria 5","Redireciona para o Swagger"], exp:"Com o caminho em partes, o controller decide: 0 partes lista, 1 parte busca por id, 2 partes com \"sugestoes\" é o ranking."},
+    {t:"mc", q:"O que é CORS, liberado no ApiServlet?", o:["Permissão para uma página de outro endereço chamar a API pelo navegador","Um tipo de banco","Um código de status","Uma biblioteca de JSON"], exp:"O cabeçalho Access-Control-Allow-Origin: * libera. A index.jsp usa isso ao chamar a API com fetch."},
+    {gen:"statusCode"},{gen:"ranking"}
+  ]},
+  { title:"Banco e código da API", sub:"Tabelas, conexão, DAO, SQL das sugestões", qs:[
+    {t:"mc", q:"Quantas tabelas o banco tem, e qual é a \"ponte\" entre filme e categoria?", o:["3 tabelas; avaliacoes é a ponte (filme_id e categoria_id)","2 tabelas; não há ponte","4 tabelas; a ponte é filmes_categorias","3 tabelas; categorias é a ponte"], exp:"filmes, categorias e avaliacoes. Um mesmo filme pode ter notas em várias categorias."},
+    {t:"mc", q:"O que a FK (chave estrangeira) garante?", o:["Que não dá para criar uma avaliação de um filme que não existe","Que o id cresce sozinho","Que o título não se repete","Que a nota é de 0 a 10"], exp:"A FK liga a avaliação a um filme e a uma categoria existentes. O id que cresce sozinho é a PK com AUTO_INCREMENT."},
+    {t:"mc", q:"Como o PreparedStatement evita SQL Injection?", o:["O SQL usa ? no lugar dos valores; o valor digitado nunca é colado no comando","Criptografando o banco","Bloqueando a palavra DROP","Usando senha forte"], exp:"Se alguém digitar '); DROP TABLE filmes; -- no título, vira só um título estranho."},
+    {t:"mc", q:"Para que serve <code>RETURN_GENERATED_KEYS</code> no FilmeDAO.inserir?", o:["Pedir ao banco o id que ele acabou de criar","Gerar uma senha","Retornar todas as linhas da tabela","Criar a tabela"], exp:"O banco devolve o id novo (por exemplo, 6) e o Service usa para buscar e devolver o filme."},
+    {t:"mc", q:"Por que buscarPorId devolve um <code>Optional&lt;Filme&gt;</code>?", o:["É uma caixa que pode estar vazia; obriga a tratar o \"não encontrei\" em vez de receber null de surpresa","Para deixar mais rápido","Porque o Gson exige","Para guardar várias notas"], exp:"No Service, orElseThrow transforma a caixa vazia em RecursoNaoEncontradoException, que vira 404."},
+    {t:"ord", q:"Ordene a consulta das sugestões, do jeito que se lê o SQL.", items:["FROM filmes f JOIN avaliacoes a ON a.filme_id = f.id","WHERE a.categoria_id = ?","GROUP BY f.id, f.titulo, f.ano_lancamento","AVG(a.nota) AS media","ORDER BY media DESC, f.titulo"], exp:"Junta filme com avaliações, fica só com a categoria, agrupa por filme, calcula a média e ordena da maior para a menor (empate em ordem alfabética)."},
+    {t:"mc", q:"O que faz a ConnectionFactory?", o:["É a fábrica de conexões: todo DAO chama getConnection(), e endereço, usuário e senha vêm de variáveis de ambiente","Cria as tabelas","Converte JSON","Testa as regras"], exp:"jdbc:mysql://mysql:3306/mvc_java = MySQL na máquina \"mysql\" (o container), porta 3306, banco mvc_java. Com DB_MODE=h2 usa o banco de teste."},
+    {t:"mc", q:"Por que o DatabaseBootstrap tenta até 20 vezes?", o:["No Docker a API pode ligar antes do MySQL terminar de subir; ele espera 2 s entre tentativas","Para criar 20 tabelas","Para inserir 20 filmes","Porque o Tomcat pede"], exp:"Ele é um @WebListener: roda quando a API liga, cria as tabelas com CREATE TABLE IF NOT EXISTS e põe 5 filmes de exemplo se o banco estiver vazio."},
+    {t:"mc", q:"<code>try ( ... )</code> com parênteses, nos DAOs, é:", o:["try-with-resources: fecha a conexão sozinho no final, mesmo se der erro","Um laço de repetição","Uma transação","Um teste JUnit"], exp:"Evita deixar conexões abertas com o banco."},
+    {t:"mc", q:"Por que o campo <code>media</code> do Filme é <code>Double</code> (com D maiúsculo)?", o:["Pode ficar vazio (null): a média só existe nas sugestões, e aí o Gson nem coloca o campo no JSON","Porque é mais preciso que double","Porque o MySQL exige","Por engano"], exp:"Os campos são private com getters e setters: isso é encapsulamento."},
+    {gen:"ranking"}
+  ]},
+  { title:"Site, Docker e testes", sub:"ApiClient, JSP, docker-compose, JUnit", qs:[
+    {t:"mc", q:"Você digita nota 11 na tela. Onde a regra é conferida?", o:["Só na API: o site manda POST /api/avaliacoes, recebe 400 e mostra a mensagem em vermelho","No site, antes de enviar","No MySQL, por trigger","Na JSP"], exp:"O site não sabe a regra; só mostra o que a API disse. Isso prova que as camadas estão separadas de verdade."},
+    {t:"mc", q:"O que o ApiClient faz quando a API responde 400 ou mais?", o:["Lê o campo \"erro\" e lança uma ApiException com a mesma mensagem","Tenta de novo até dar certo","Ignora e mostra uma lista vazia","Desliga o site"], exp:"E se a API estiver desligada, a ApiException diz: \"Não foi possível conectar à API... Ela está rodando?\""},
+    {t:"mc", q:"Por que o FilmeServlet faz <code>sendRedirect</code> depois de salvar?", o:["Para o formulário não ser enviado de novo ao apertar F5 (padrão Post/Redirect/Get)","Para ir para o Swagger","Para apagar o cache","Para trocar de porta"], exp:"Deu certo: redireciona e recarrega a tela. Deu errado: mostra o motivo e desenha a tela de novo."},
+    {t:"mc", q:"Por que usar <code>&lt;c:out&gt;</code> na JSP?", o:["Escreve o texto escapando HTML: um título &lt;script&gt; aparece como texto e não roda (proteção contra XSS)","Para deixar o texto em negrito","Para repetir o bloco","Para chamar a API"], exp:"c:forEach repete o bloco para cada item; c:if mostra só se a condição for verdadeira."},
+    {t:"mc", q:"Por que existem URL interna e URL pública da API?", o:["O servidor do site, dentro do Docker, usa http://api:8080/api; o navegador, fora do Docker, usa http://localhost:8080/api","Uma é para GET e a outra para POST","Uma é a de teste","Por segurança de senha"], exp:"O navegador não conhece o nome \"api\" do container. As duas ficam na ApiConfig (API_URL e API_URL_PUBLICA)."},
+    {t:"mc", q:"Quantos containers o docker-compose sobe?", o:["3: mysql, api e web","1: tudo junto","2: api e web","4: mysql, api, web e tomcat"], exp:"Ligue com docker compose up --build -d. API em localhost:8080/api, Swagger em /api/docs/ e site em localhost:8081/mvc/."},
+    {t:"mc", q:"O que faz <code>condition: service_healthy</code> na api?", o:["Só liga a API depois que o healthcheck do banco disser que ele está pronto","Reinicia o banco a cada minuto","Libera o CORS","Roda os testes"], exp:"O healthcheck do mysql usa mysqladmin ping."},
+    {t:"mc", q:"Por que o Dockerfile da API tem duas etapas?", o:["Etapa 1 compila com Maven e gera api.war; etapa 2 usa só o Tomcat, e a imagem final fica menor","Uma para Windows e outra para Linux","Uma para o banco e outra para o site","Para rodar os testes duas vezes"], exp:"O api.war copiado para webapps vira o endereço /api."},
+    {t:"mc", q:"Onde rodam os testes JUnit?", o:["Na camada Service, num banco H2 em memória que some quando o teste acaba","No MySQL de produção","No navegador","No Postman"], exp:"Rode com mvn test dentro de api/. assertThrows confere que nota 11 e nota −1 dão ValidacaoException."},
+    {t:"mc", q:"Como rodar no Windows sem Docker?", o:["powershell -ExecutionPolicy Bypass -File rodar-local.ps1 (usa H2; API e site em localhost:8080)","docker compose down -v","mvn clean","Abrindo o index.jsp no navegador"], exp:"O script baixa Java, Maven e Tomcat na primeira vez. Ctrl+C desliga."}
+  ]},
+  { title:"Ensaio da apresentação", sub:"Roteiro de 5 minutos e perguntas do professor", qs:[
+    {t:"ord", q:"Ordene o roteiro de 5 minutos.", items:["Tema (30 s): sugestão de filmes por categoria, notas de 0 a 10, ranking pela média","Estrutura (1 min): pastas api/ e web/; o site é só cliente da API","Camadas (1 min 30 s): FilmeApiController → FilmeService → FilmeDAO, com a analogia do restaurante","Demonstração (1 min 30 s): Swagger ou Postman","Fechamento (30 s): MySQL, documentação e código no GitHub"], exp:"Combine com a dupla quem explica cada parte, porque a avaliação é individual."},
+    {t:"ord", q:"Ordene a demonstração no Swagger/Postman.", items:["GET /api/filmes (200)","POST /api/filmes com Duna (201)","POST /api/avaliacoes com nota 11 (400, mostrar a mensagem)","GET /api/categorias/5/sugestoes (o ranking)","Mostrar que o filme novo aparece também no site"], exp:"Mostra leitura, criação, a regra funcionando e a parte principal do tema."},
+    {t:"mc", q:"\"Por que ter a camada Service? O Controller não podia falar direto com o DAO?\"", o:["Podia, mas as regras ficariam misturadas com o HTTP; no Service a regra fica num lugar só e vale para API, testes e outros apps","Não podia, o Java proíbe","Porque o DAO é lento","Porque o Swagger exige"], exp:"Resposta do guia, seção 9."},
+    {t:"mc", q:"\"O que acontece se eu apagar um filme que tem avaliações?\"", o:["409 Conflict, pedindo para apagar as avaliações antes; protege a integridade (e a FK também bloquearia)","Apaga tudo em cascata","Dá 404","Dá 204 e as avaliações ficam órfãs"], exp:"Mesma regra vale para categoria com avaliações."},
+    {t:"mc", q:"\"Como o site sabe onde está a API?\"", o:["Pela variável de ambiente API_URL, lida na classe ApiConfig; no Docker aponta para o container api","Está escrito fixo em cada JSP","Pelo banco de dados","Pelo Postman"], exp:"A URL pública (API_URL_PUBLICA) é a que o navegador usa na index.jsp."},
+    {t:"mc", q:"\"Como é calculada a sugestão?\"", o:["Uma consulta SQL junta filmes e avaliações da categoria, calcula AVG(nota) e ordena da maior média para a menor (FilmeDAO.sugerirPorCategoria)","O Java soma as notas num laço no controller","Pela nota mais recente","Por quem tem mais avaliações"], exp:"Empate é desfeito pela ordem alfabética do título."},
+    {t:"mc", q:"\"Onde está a documentação?\"", o:["Swagger em /api/docs/, coleção do Postman em api/docs/ e as tabelas no api/README.md","Só no PDF","No pom.xml","Nos comentários do init.sql"], exp:"No Swagger: clique num endpoint → Try it out → Execute. O arquivo que descreve tudo é o openapi.yaml."},
+    {t:"mc", q:"\"Que segurança básica vocês têm?\"", o:["PreparedStatement contra SQL Injection e &lt;c:out&gt; contra XSS","Login com senha","Criptografia do banco","Firewall no Docker"], exp:"Também não há senha escondida no código: tudo vem de variáveis de ambiente."},
+    {gen:"statusCode"}
+  ]}
+  ]
+};
+TRACKS.push(CINE_TRACK);
+
+Object.assign(LESSONS, {
+"cine:0": `
+<p class="key">Em uma frase: o usuário cadastra <b>filmes</b> e <b>categorias</b>, dá <b>notas de 0 a 10</b> para um filme dentro de uma categoria, e o sistema <b>sugere os melhores filmes de cada categoria</b> pela média das notas.</p>
+<p>Exemplo: Matrix recebeu 9 e Interestelar recebeu 10 em Ficção Científica. As sugestões mostram 1. Interestelar (10,0) e 2. Matrix (9,0).</p>
+<h3>API e REST</h3>
+<p>Pense num restaurante: o cliente não entra na cozinha, faz o pedido ao <b>garçom</b>. A <b>API</b> é o garçom, a porta de entrada pela qual outros programas (navegador, Postman, app, o nosso site) pedem coisas ao sistema.</p>
+<p><b>REST</b> é o jeito combinado de montar essa porta: cada coisa tem um <b>endereço</b> (<code>/api/filmes</code>, <code>/api/filmes/3</code>) e a ação é dita pelo <b>verbo HTTP</b>.</p>
+<span class="f">GET    /api/filmes     ler        Read
+POST   /api/filmes     criar      Create
+PUT    /api/filmes/3   atualizar  Update
+DELETE /api/filmes/3   apagar     Delete</span>
+<p>POST cria um recurso novo e o servidor escolhe o id. PUT atualiza um que já existe, com o id na URL.</p>
+<h3>JSON</h3>
+<span class="f">{ "id": 1, "titulo": "Matrix", "anoLancamento": 1999 }</span>
+<p>Objeto entre chaves, lista entre colchetes <code>[ ... ]</code>.</p>
+<h3>Códigos de status</h3>
+<span class="f">200 OK          buscar, listar, atualizar
+201 Created     cadastrou
+204 No Content  apagou (sucesso sem corpo)
+400 Bad Request nota 11, título vazio, JSON quebrado
+404 Not Found   GET /api/filmes/999
+409 Conflict    categoria repetida; apagar filme com avaliações
+500 Server Err. algo inesperado (banco fora do ar)</span>
+<p class="key">2xx = sucesso. 4xx = culpa de quem pediu. 5xx = culpa do servidor.</p>
+<h3>MVC</h3>
+<p><b>Model</b> são os dados (Filme, Categoria). <b>View</b> é o que a pessoa vê (JSP no site, JSON na API). <b>Controller</b> recebe o pedido e decide o que fazer. O trabalho pede mais duas camadas: <b>Service</b> e <b>DAO</b>.</p>`,
+
+"cine:1": `
+<h3>Dois projetos</h3>
+<span class="f">sistema-sugestao-filmes-mvc/
+├── api/   a API REST (JSON + banco)
+├── web/   o site com as telas (conversa com a API)
+├── docker-compose.yml   liga banco + API + site
+└── rodar-local.ps1      liga tudo no Windows sem Docker</span>
+<p>Separados para a API <b>não depender</b> do site. O site <b>nunca</b> acessa o banco: ele sempre pede para a API.</p>
+<span class="f">Navegador → web (telas) → HTTP/JSON → api → MySQL
+Postman   ─────────────→ HTTP/JSON → api → MySQL</span>
+<h3>As camadas da API (analogia do restaurante)</h3>
+<span class="f">CONTROLLER = garçom      recebe o pedido, lê o JSON, devolve resposta e código
+SERVICE    = cozinheiro  aplica as REGRAS ("nota de 0 a 10")
+DAO        = estoquista  busca e guarda no banco (SQL)
+MySQL      = despensa    onde os dados ficam</span>
+<p>Cada um só faz a sua parte: o garçom não sabe as regras, o cozinheiro pede ao estoquista, o estoquista não decide nada.</p>
+<h3>As pastas em api/src/main/java/br/com/mvc/</h3>
+<ul>
+<li><code>controller/</code>: FilmeApiController, CategoriaApiController, AvaliacaoApiController e a mãe ApiServlet.</li>
+<li><code>service/</code>: FilmeService, CategoriaService, AvaliacaoService (regras).</li>
+<li><code>dao/</code>: FilmeDAO, CategoriaDAO, AvaliacaoDAO (um por tabela).</li>
+<li><code>model/</code>: Filme, Categoria, Avaliacao (os moldes).</li>
+<li><code>exception/</code>, <code>config/</code> (ConnectionFactory, DatabaseBootstrap) e <code>filter/</code> (EncodingFilter, UTF-8).</li>
+</ul>
+<p><code>src/main</code> e <code>src/test</code> são padrão do Maven. <code>main</code> é só nome de pasta: quem liga o sistema é o <b>Tomcat</b>. <code>target/</code> é gerada pelo Maven e não vai para o GitHub. No <code>web/</code>, no lugar de dao e service está <code>client/</code>, que chama a API.</p>
+<h3>Um POST do começo ao fim</h3>
+<span class="f">POST /api/filmes  { "titulo": "Duna", "anoLancamento": 2021 }
+1. FilmeApiController.post → lerFilme → service.criar(filme)
+2. FilmeService.criar → validar (título, ano 1888..ano atual+5)
+3. FilmeDAO.inserir → INSERT INTO filmes (titulo, ano_lancamento) VALUES (?, ?)
+4. HTTP 201 Created, Location: /api/filmes/6, { "id": 6, ... }</span>`,
+
+"cine:2": `
+<h3>Todas as regras (camada Service)</h3>
+<ul>
+<li><b>Filme</b>: título obrigatório com até 150 caracteres; ano entre <b>1888</b> e o <b>ano atual + 5</b>.</li>
+<li><b>Categoria</b>: nome obrigatório com até 100 caracteres e <b>sem repetir</b> ("Ação" e "ação" contam como iguais).</li>
+<li><b>Avaliação</b>: nota de <b>0 a 10</b>; o filme e a categoria precisam existir.</li>
+<li><b>Não dá para apagar</b> filme ou categoria com avaliações (409).</li>
+<li><b>Sugestões</b>: filmes avaliados na categoria, ordenados pela média, da maior para a menor.</li>
+</ul>
+<h3>Exceções viram códigos</h3>
+<p>O Service <b>não sabe nada de HTTP</b>: ele só lança exceções. Quem traduz é o <b>ApiServlet</b>, a classe mãe dos controllers.</p>
+<span class="f">ValidacaoException             → 400
+RecursoNaoEncontradoException  → 404
+ConflitoException              → 409
+MetodoNaoPermitidoException    → 405
+qualquer outra                 → 500</span>
+<span class="f">{ "status": 400, "erro": "O título é obrigatório." }</span>
+<h3>O que mais o ApiServlet faz</h3>
+<ul>
+<li>Escolhe get, post, put ou delete conforme o verbo.</li>
+<li>Quebra o endereço: <code>/5/sugestoes</code> vira <code>["5", "sugestoes"]</code>.</li>
+<li>Lê e escreve JSON com a biblioteca <b>Gson</b>.</li>
+<li>Libera o <b>CORS</b> (outra página pode chamar a API pelo navegador).</li>
+</ul>
+<h3>Endpoints (base http://localhost:8080/api)</h3>
+<span class="f">/filmes, /categorias, /avaliacoes
+  GET (lista)   GET /{id}   POST   PUT /{id}   DELETE /{id}
+GET /categorias/{id}/sugestoes   ← o ranking
+GET /avaliacoes?filmeId=1  ou  ?categoriaId=5</span>
+<span class="f">{ "titulo": "Duna", "anoLancamento": 2021 }       filme
+{ "nome": "Terror" }                               categoria
+{ "filmeId": 1, "categoriaId": 5, "nota": 8 }      avaliação</span>`,
+
+"cine:3": `
+<h3>As 3 tabelas</h3>
+<span class="f">filmes:      id (PK), titulo, ano_lancamento
+categorias:  id (PK), nome
+avaliacoes:  id (PK), filme_id (FK→filmes), categoria_id (FK→categorias), nota</span>
+<p><b>PK</b> identifica cada linha e cresce sozinha (AUTO_INCREMENT). <b>FK</b> liga a avaliação a um filme e a uma categoria que existam. A avaliação é a <b>ponte</b>: um filme pode ter notas em várias categorias.</p>
+<p>As tabelas são criadas pelo <code>init.sql</code> (Docker, primeira vez) e pelo <b>DatabaseBootstrap</b>, um <code>@WebListener</code> que roda quando a API liga: <code>CREATE TABLE IF NOT EXISTS</code>, até <b>20 tentativas</b> com 2 s de espera (o MySQL pode estar ligando) e 5 filmes de exemplo se o banco estiver vazio.</p>
+<h3>ConnectionFactory</h3>
+<p>A fábrica de conexões: todo DAO chama <code>getConnection()</code>. Lê variáveis de ambiente (DB_MODE mysql ou h2, DB_HOST, DB_USER, DB_PASSWORD), então nenhuma senha fica escondida no código.</p>
+<span class="f">jdbc:mysql://mysql:3306/mvc_java
+MySQL na máquina "mysql" (container), porta 3306, banco mvc_java</span>
+<h3>DAO</h3>
+<span class="f">INSERT INTO filmes (titulo, ano_lancamento) VALUES (?, ?)</span>
+<ul>
+<li>Os <code>?</code> são preenchidos pelo <b>PreparedStatement</b>: proteção contra <b>SQL Injection</b>.</li>
+<li><code>RETURN_GENERATED_KEYS</code> pede ao banco o id que ele criou.</li>
+<li><code>try ( ... )</code> é try-with-resources: fecha a conexão sozinho.</li>
+<li><code>buscarPorId</code> devolve <code>Optional</code>, uma caixa que pode estar vazia; no Service, <code>orElseThrow</code> vira 404.</li>
+</ul>
+<h3>A consulta das sugestões (o coração do tema)</h3>
+<span class="f">SELECT f.id, f.titulo, f.ano_lancamento, AVG(a.nota) AS media
+FROM filmes f JOIN avaliacoes a ON a.filme_id = f.id
+WHERE a.categoria_id = ?
+GROUP BY f.id, f.titulo, f.ano_lancamento
+ORDER BY media DESC, f.titulo</span>
+<p>Exemplo: Matrix com notas 8 e 10 tem média 9,0; Duna com 7, 9 e 8 tem média 8,0. Matrix fica em 1º.</p>
+<h3>Model</h3>
+<p>Campos <code>private</code> com getters e setters (<b>encapsulamento</b>). O construtor vazio existe porque o Gson precisa dele. <code>media</code> é <code>Double</code> porque pode ser null: só existe nas sugestões.</p>`,
+
+"cine:4": `
+<h3>Como o site chama a API</h3>
+<span class="f">Clique em "Filmes"
+→ FilmeServlet (controller do site)
+→ FilmeClient: GET http://localhost:8080/api/filmes
+→ JSON vira objetos Filme
+→ filmes.jsp (view) monta o HTML</span>
+<ul>
+<li><b>ApiClient</b> é o "telefone": faz GET, POST, PUT e DELETE com o HttpClient do Java. Se a resposta for 400 ou mais, lê o campo "erro" e lança <code>ApiException</code> com a mesma mensagem. Se a API estiver desligada: "Não foi possível conectar à API... Ela está rodando?"</li>
+<li><b>TelaServlet</b> é a mãe das telas: carrega os dados; se der erro, mostra a mensagem em vermelho.</li>
+<li>Depois de salvar, <code>sendRedirect</code> evita reenviar o formulário no F5 (padrão <b>Post/Redirect/Get</b>).</li>
+<li>Na JSP: <code>&lt;c:forEach&gt;</code> repete, <code>&lt;c:if&gt;</code> condiciona e <code>&lt;c:out&gt;</code> escapa HTML, protegendo contra <b>XSS</b>.</li>
+</ul>
+<p class="key">Nota 11 na tela: o site manda POST /api/avaliacoes, a API responde 400 "A nota deve estar entre 0 e 10." e o site só mostra. A regra está só na API.</p>
+<h3>ApiConfig: duas URLs</h3>
+<p><b>Interna</b> (<code>http://api:8080/api</code>): usada pelo servidor do site dentro do Docker. <b>Pública</b> (<code>http://localhost:8080/api</code>): usada pelo navegador, que está fora do Docker e não conhece o nome "api". A index.jsp chama a API direto do navegador com <code>fetch</code>.</p>
+<h3>Docker</h3>
+<span class="f">docker compose up --build -d   sobe 3 containers: mysql, api, web
+API      http://localhost:8080/api/filmes
+Swagger  http://localhost:8080/api/docs/
+Site     http://localhost:8081/mvc/
+docker compose down      desliga
+docker compose down -v   apaga o banco</span>
+<p>A api tem <code>depends_on</code> com <code>condition: service_healthy</code>: só liga quando o banco responde ao healthcheck. O Dockerfile tem <b>duas etapas</b>: uma com Maven compila o api.war, a outra só com Tomcat roda (imagem menor). Sem Docker: <code>rodar-local.ps1</code>, com banco H2.</p>
+<h3>Testes</h3>
+<p>JUnit na camada <b>Service</b>, em <code>api/src/test</code>, com banco <b>H2 em memória</b> que some no fim. <code>assertEquals</code> confere o resultado; <code>assertThrows</code> confere que nota 11 e nota −1 dão ValidacaoException. Rode com <code>mvn test</code>.</p>`,
+
+"cine:5": `
+<h3>Roteiro de 5 minutos</h3>
+<ol>
+<li><b>Tema (30 s)</b>: "Sistema de sugestão de filmes por categoria. O usuário avalia filmes de 0 a 10 e o sistema monta um ranking pela média."</li>
+<li><b>Estrutura (1 min)</b>: mostre as pastas api/ e web/. "A API é um projeto separado. O site é só um cliente dela; ele não acessa o banco."</li>
+<li><b>Camadas (1 min 30 s)</b>: abra FilmeApiController → FilmeService → FilmeDAO e explique o caminho do POST com a analogia garçom, cozinheiro e estoquista.</li>
+<li><b>Demonstração (1 min 30 s)</b>, no Swagger ou no Postman: GET /api/filmes (200); POST /api/filmes com Duna (201); POST /api/avaliacoes com nota 11 (400, mostre a mensagem); GET /api/categorias/5/sugestoes (ranking); e mostre que o filme novo aparece no site.</li>
+<li><b>Fechamento (30 s)</b>: MySQL, documentação no Swagger/Postman/README e código no GitHub.</li>
+</ol>
+<p class="key">A avaliação é individual: combine com a dupla quem explica cada parte (por exemplo, uma pessoa a API e as camadas; a outra o banco, o site e a demonstração).</p>
+<h3>Resumo de uma página</h3>
+<ul>
+<li>Dois projetos: api/ (JSON + banco) e web/ (telas que chamam a API).</li>
+<li>Camadas: Controller (HTTP) → Service (regras) → DAO (SQL) → MySQL.</li>
+<li>CRUD de filmes, categorias e avaliações, mais o endpoint de sugestões.</li>
+<li>Erros: 400, 404, 409 e 500.</li>
+<li>Segurança: PreparedStatement e &lt;c:out&gt;.</li>
+<li>Documentação: Swagger, Postman e README. Testes: JUnit no Service com H2.</li>
+</ul>
+<p>Nesta fase vêm as perguntas que o professor pode fazer, com a resposta do guia.</p>`
+});
+
+
+/* ---------- Aplicações para Internet: fases de aula (slides e enunciados) ---------- */
+const APINET_PHASES = [
+  { title:"Ambiente Java Web", sub:"JDK, Maven, VS Code, Tomcat, build e deploy", qs:[
+    {t:"mc", q:"Qual extensão do VS Code é essencial para gerenciar o Tomcat?", o:["Community Server Connectors","Extension Pack for Java","Live Server","Docker"], exp:"O Extension Pack for Java (da Microsoft) dá suporte à linguagem. Quem gerencia o Tomcat dentro do VS Code é o Community Server Connectors."},
+    {t:"mc", q:"Quais variáveis de ambiente o slide manda configurar?", o:["JAVA_HOME, MAVEN_HOME e M2_HOME, e no Path a pasta bin do Java e do Maven","Só CLASSPATH","TOMCAT_PORT e DB_HOST","Nenhuma: o VS Code faz tudo"], exp:"MAVEN_HOME e M2_HOME apontam para o mesmo caminho do Maven."},
+    {t:"mc", q:"Como validar que o Maven reconheceu o Java?", o:["mvn -version, que mostra a versão do Maven e o JAVA_HOME","java -maven","mvn start","tomcat -version"], exp:"Antes, java -version deve mostrar a versão do JDK."},
+    {t:"mc", q:"Qual arquétipo do Maven cria um projeto web?", o:["maven-archetype-webapp","maven-archetype-quickstart","spring-boot-starter","java-web-basic"], exp:"No Command Palette (Ctrl+Shift+P): Java: Create Java Project → Maven → maven-archetype-webapp. Depois define o Group Id (br.com.escola) e o Artifact Id (projeto-web)."},
+    {t:"mc", q:"Na estrutura gerada, onde ficam os JSPs e HTMLs?", o:["src/main/webapp","src/main/java","target/","src/test"], exp:"Servlets e classes em src/main/java; JSPs e HTMLs em src/main/webapp; o web.xml em webapp/WEB-INF; as dependências no pom.xml."},
+    {t:"mc", q:"O que <code>mvn clean package</code> gera?", o:["A pasta target com o arquivo .war (ex.: projeto-web.war)","Um instalador .exe","O banco de dados","Um container Docker"], exp:"Esse é o build. O deploy é colocar o .war no Tomcat (botão direito → Run on Server)."},
+    {t:"mc", q:"O .war se chama projeto-web.war. Em qual endereço a aplicação abre?", o:["http://localhost:8080/projeto-web","http://localhost:3306/projeto-web","http://projeto-web.com","http://localhost:8080/"], exp:"O nome do .war vira o caminho da aplicação. É por isso que, no CineSugere, o api.war fica em /api."},
+    {t:"ord", q:"Ordene a configuração do Tomcat no VS Code.", items:["Na barra lateral, ir em Servers","Clicar em Create New Server","Selecionar Community Server Connector","Apontar para a pasta onde o Tomcat foi descompactado","Botão direito no servidor → Start Server"], exp:"Depois é só fazer o build e o deploy do .war."}
+  ]},
+  { title:"API REST nativa com Servlets", sub:"HttpServlet, GET, POST, PUT, PATCH, DELETE", qs:[
+    {t:"mc", q:"Por que usar HttpServlet nativo, sem Spring ou Jakarta REST?", o:["Controle total de headers, corpo e rotas, e menos camadas (mais leve)","Porque frameworks são proibidos em Java","Porque Servlet já gera JWT sozinho","Porque não precisa de servidor"], exp:"Os slides citam controle total (sem \"mágica\" de anotações) e performance pura (menos abstração, menos memória)."},
+    {t:"mc", q:"Sem framework, o que fica por nossa conta?", o:["Extrair parâmetros da URL, ler o corpo, converter JSON ↔ objeto (Gson) e escrever a resposta com o status","Nada: o Tomcat faz tudo","Só configurar o banco","Só escrever o HTML"], exp:"É exatamente o que o ApiServlet do CineSugere faz para os três controllers."},
+    {t:"mc", q:"Por que o mapeamento é <code>@WebServlet(\"/api/produtos/*\")</code>, com <code>/*</code>?", o:["Para o mesmo servlet atender /api/produtos e /api/produtos/10","Para aceitar só POST","Para bloquear outros endereços","Por causa do CORS"], exp:"O curinga captura o caminho com ou sem id. No CineSugere é @WebServlet(\"/filmes/*\"), e o /api vem do api.war."},
+    {t:"mc", q:"No doGet, como se descobre o id de /api/produtos/10?", o:["Extraindo manualmente do PathInfo (\"/10\")","req.getId()","Pelo corpo da requisição","Pelo cookie"], exp:"O getPathInfo() devolve o que vem depois do mapeamento. Se for null ou \"/\", é a lista; se for \"/10\", é o produto 10."},
+    {t:"mc", q:"No POST, como se lê o JSON enviado?", o:["Pelo corpo da requisição, com InputStream ou BufferedReader, e o Gson converte em objeto","Pela URL","Pelo PathInfo","Pelos headers"], exp:"E ao criar com sucesso: resp.setStatus(201)."},
+    {t:"mc", q:"O que significa o PUT ser <b>idempotente</b>?", o:["Repetir o mesmo PUT não muda o resultado além da primeira execução","Ele só pode ser chamado uma vez","Ele cria um recurso novo a cada chamada","Ele não precisa de id"], exp:"O PUT substitui o estado completo do objeto. Mandar o mesmo PUT 5 vezes deixa o recurso igual ao da primeira. O POST não é assim: cada chamada cria um novo."},
+    {t:"mc", q:"Como suportar PATCH num HttpServlet?", o:["Sobrescrevendo o método service, porque não existe doPatch","Chamando doPatch","Usando @Patch","Não é possível"], exp:"O ApiServlet do CineSugere já sobrescreve service() e faz um switch no verbo (GET, POST, PUT, DELETE, OPTIONS). Um case \"PATCH\" encaixaria ali."},
+    {t:"mc", q:"Qual a diferença entre PUT e PATCH?", o:["PUT substitui o objeto inteiro; PATCH altera só alguns campos","PATCH apaga e PUT cria","São iguais","PUT é para listas e PATCH para um item"], exp:"Pelos slides: PUT é atualização total. PATCH é a atualização parcial que exige o service sobrescrito."},
+    {t:"mc", q:"Qual status é o ideal num DELETE bem-sucedido?", o:["204 No Content","201 Created","200 com o objeto apagado","404"], exp:"A exclusão aconteceu e não há dados para devolver."},
+    {t:"mc", q:"Remoção lógica × física: quem decide?", o:["O Service. O controller só chama o service","O Controller","O Tomcat","O navegador"], exp:"Física apaga a linha; lógica muda um flag (ex.: ativo = false). No CineSugere a exclusão apaga a linha, e o Service antes confere se há avaliações (409)."}
+  ]},
+  { title:"Segurança com JWT", sub:"Stateless, Bearer, partes do token, filtro 401", qs:[
+    {t:"mc", q:"O que é autenticação <b>stateless</b>?", o:["O servidor não guarda sessão; os dados do usuário vão num token enviado em toda requisição","O servidor guarda tudo em cookie de sessão","Não existe login","O token fica salvo no banco a cada pedido"], exp:"Sem Session nem cookie de sessão. Cada requisição carrega o token."},
+    {t:"mc", q:"Em que header o token vai?", o:["Authorization: Bearer [token]","Content-Type: token","Cookie: JSESSIONID","Accept: jwt"], exp:"É o formato padrão: a palavra Bearer, um espaço e o token."},
+    {t:"ord", q:"Ordene as três partes de um JWT.", items:["Header: tipo do token e algoritmo (ex.: HS256)","Payload: as claims (id, nome, expiração)","Signature: garante que o token não foi alterado"], exp:"Na string do token, as três partes vêm separadas por pontos: header.payload.signature."},
+    {t:"mc", q:"Para que serve a Signature?", o:["Garantir que o token não foi alterado no caminho","Esconder o nome do usuário","Guardar a senha","Definir a porta da API"], exp:"Se alguém mudar o payload, a assinatura não confere e o token é rejeitado."},
+    {t:"vf", q:"Qualquer pessoa que pegar o token consegue ler o payload, porque ele é só codificado em Base64, não cifrado.", a:true, exp:"Verdadeiro. A assinatura impede alteração, mas não esconde o conteúdo. Por isso não se coloca senha no payload."},
+    {t:"mc", q:"Qual biblioteca os slides recomendam?", o:["java-jwt, da Auth0 (com.auth0, versão 4.4.0)","Gson","JUnit","O Java puro já gera JWT"], exp:"O Java puro não gera JWT sozinho. A alternativa famosa é a io.jsonwebtoken (jjwt), mas a da Auth0 tem a sintaxe mais amigável."},
+    {t:"ord", q:"Ordene a geração do token com a java-jwt.", items:["Algorithm alg = Algorithm.HMAC256(\"segredo\");","JWT.create().withIssuer(\"minha-api\")",".withClaim(\"userId\", 123).withExpiresAt(data)",".sign(alg); // devolve a String do token"], exp:"Algoritmo, builder, claims e assinatura."},
+    {t:"mc", q:"Onde validar o token para proteger as rotas?", o:["Num Filter, que roda antes do Servlet","Dentro de cada método doGet","No banco de dados","Na JSP"], exp:"O filtro verifica o token antes de qualquer controller. É o mesmo tipo de classe do EncodingFilter do CineSugere."},
+    {t:"mc", q:"O token chegou inválido ou vencido. O que o Filter responde?", o:["401 Unauthorized, sem deixar chegar ao Servlet","404 Not Found","500","200 com aviso"], exp:"401 = não autenticado. (403 Forbidden seria autenticado, mas sem permissão.)"},
+    {t:"mc", q:"Para que serve a claim de expiração (withExpiresAt)?", o:["Depois da data o token deixa de valer e o usuário precisa de um novo","Para apagar o usuário","Para trocar o algoritmo","Para criar a tabela de sessões"], exp:"Como o servidor não guarda sessão, a expiração limita por quanto tempo um token roubado funcionaria."}
+  ]},
+  { title:"Os enunciados T1 e T2", sub:"O que cada trabalho pede e como o CineSugere atende", qs:[
+    {t:"mc", q:"O que o T2 (API, 30 pontos) pede?", o:["API RESTful em Java, MVC com Controller, Service e DAO, CRUD, MySQL, endpoints documentados e projeto no GitHub","Um site só com HTML e CSS","Um app de celular","Uma API em Python com SQLite"], exp:"Além disso: boas práticas de organização, link do repositório no disco virtual do AVA e apresentação em sala."},
+    {t:"mc", q:"Quando é a apresentação e entrega do T2?", o:["26/11/2026","17/09/2026","Sem data definida","01/12/2026"], exp:"17/09/2026 foi a entrega do T1 (10 pontos)."},
+    {t:"mc", q:"Como os endpoints podem ser documentados, segundo o T2?", o:["README.md ou ferramenta como Postman ou Swagger","Só em PDF","Comentários no código bastam","Não precisa documentar"], exp:"O CineSugere tem os três: Swagger em /api/docs/, coleção do Postman em api/docs/ e o api/README.md."},
+    {t:"mc", q:"No T2, como é a avaliação dos alunos da dupla?", o:["Individual, durante a apresentação; todos devem contribuir","Uma nota igual para a dupla, sem apresentação","Só pelo código no GitHub","Por prova escrita"], exp:"Por isso o guia sugere dividir: uma pessoa explica API e camadas; a outra, banco, site e demonstração."},
+    {t:"mc", q:"O T2 é a continuação de quê?", o:["Do projeto que cada dupla definiu em sala (o T1, aplicação web MVC)","De um projeto novo, sorteado","Do trabalho de Redes","De nada: é independente"], exp:"No CineSugere, a pasta web/ é a aplicação MVC com telas e a api/ é a API REST pedida no T2."},
+    {t:"mc", q:"No T1, o que a apresentação precisava mostrar?", o:["O CRUD funcionando em tempo real e a estrutura de pastas, com o MVC aplicado numa funcionalidade","Só os slides","Só o banco de dados","O código de outro grupo"], exp:"O T1 também avaliava a participação dos dois no versionamento (Git)."},
+    {t:"mc", q:"Qual requisito do T1 o CineSugere atende com as views JSP + CSS?", o:["Interface dinâmica e interativa com HTML, CSS e, se necessário, JavaScript","Banco MySQL","Rotas","Testes"], exp:"As telas ficam em web/src/main/webapp (index.jsp, WEB-INF/views/*.jsp, css/estilo.css). A index.jsp usa JavaScript com fetch."},
+    {t:"vf", q:"O T2 aceita qualquer banco de dados, por exemplo H2.", a:false, exp:"Falso. O enunciado pede MySQL. O CineSugere usa MySQL no Docker; o H2 é só para os testes e para rodar sem instalar nada (rodar-local.ps1)."},
+    {t:"mc", q:"Onde postar o link do repositório do T2?", o:["No disco virtual do AVA","No diário de bordo","Por e-mail","Não precisa postar"], exp:"No T1 o link ia no diário de bordo. No T2, no disco virtual do AVA."}
+  ]}
+];
+
+const APINET_LESSONS = [
+`<p>Antes de qualquer código, o computador precisa estar pronto para compilar e rodar uma aplicação Java Web.</p>
+<h3>Requisitos e extensões</h3>
+<ul>
+<li><b>JDK</b> instalado.</li>
+<li><b>Maven</b> instalado e no PATH do sistema.</li>
+<li><b>Extension Pack for Java</b> (conjunto de extensões da Microsoft para o VS Code).</li>
+<li><b>Community Server Connectors</b>: essencial para gerenciar o Tomcat dentro do VS Code.</li>
+</ul>
+<h3>Variáveis de ambiente</h3>
+<span class="f">JAVA_HOME   → pasta do JDK
+MAVEN_HOME  → pasta do Maven
+M2_HOME     → o mesmo caminho do Maven
+Path        → bin do Java e bin do Maven</span>
+<p>Para validar: <code>java -version</code> mostra a versão do JDK; <code>mvn -version</code> mostra a do Maven e confirma que ele achou o JAVA_HOME.</p>
+<h3>Criando o projeto</h3>
+<p>O Maven usa <b>arquétipos</b> (modelos). Ctrl+Shift+P → <i>Java: Create Java Project</i> → Maven → <b>maven-archetype-webapp</b>. Defina o Group Id (ex.: <code>br.com.escola</code>) e o Artifact Id (ex.: <code>projeto-web</code>).</p>
+<span class="f">projeto-web/
+├── src/main/java/          Servlets e classes
+├── src/main/webapp/        JSPs e HTMLs
+│   └── WEB-INF/web.xml
+└── pom.xml                 dependências</span>
+<h3>Tomcat no VS Code</h3>
+<p>Servers → Create New Server → Community Server Connector → aponte para a pasta do Tomcat descompactado → botão direito → Start Server.</p>
+<h3>Build e deploy</h3>
+<span class="f">mvn clean package   → target/projeto-web.war
+botão direito no .war → Run on Server
+http://localhost:8080/projeto-web</span>
+<p class="key">O nome do .war vira o caminho da aplicação. No CineSugere, <code>api.war</code> fica em <code>/api</code>. Lá, o Docker e o <code>rodar-local.ps1</code> fazem esse build e deploy automaticamente.</p>`,
+
+`<p>Os slides mostram como montar uma API REST só com o <b>HttpServlet</b>, sem Spring ou Jakarta REST. É exatamente o que o CineSugere faz.</p>
+<h3>Por que Servlets?</h3>
+<ul>
+<li><b>Controle total</b>: você vê como o servidor trata headers, corpo e rotas, sem "mágica" de anotações.</li>
+<li><b>Performance</b>: menos camadas, menos memória.</li>
+</ul>
+<p>Em troca, fica por nossa conta: extrair parâmetros da URL, ler o corpo (payload), converter JSON ↔ objeto com o <b>Gson</b> e escrever a resposta com o status.</p>
+<h3>A rota base</h3>
+<span class="f">@WebServlet("/api/produtos/*")
+public class ProdutoController extends HttpServlet { ... }</span>
+<p>O <code>/*</code> faz o mesmo servlet atender <code>/api/produtos</code> e <code>/api/produtos/10</code>.</p>
+<h3>Os verbos</h3>
+<ul>
+<li><b>GET (doGet)</b>: leitura. O id é extraído manualmente do <b>PathInfo</b> ("/10").</li>
+<li><b>POST (doPost)</b>: lê o corpo com InputStream/BufferedReader, converte com Gson e responde <b>201</b>.</li>
+<li><b>PUT (doPut)</b>: atualização <b>total</b> (substitui o objeto inteiro). É <b>idempotente</b>: repetir o mesmo PUT não muda o resultado além da primeira vez.</li>
+<li><b>PATCH</b>: atualização parcial. <b>Não existe doPatch</b>: é preciso sobrescrever o método <code>service</code>.</li>
+<li><b>DELETE (doDelete)</b>: responde <b>204 No Content</b>. O controller só chama o service, e é o service que decide entre remoção <b>física</b> (apaga a linha) ou <b>lógica</b> (muda um flag).</li>
+</ul>
+<h3>Ligando com o CineSugere</h3>
+<ul>
+<li>Slide: <code>@WebServlet("/api/produtos/*")</code>. CineSugere: <code>@WebServlet("/filmes/*")</code> dentro do api.war.</li>
+<li>Slide: id pelo PathInfo "/10". CineSugere: <code>caminho()</code> devolve ["10"] ou ["5", "sugestoes"].</li>
+<li>Slide: Gson. CineSugere: Gson no ApiServlet.</li>
+<li>Slide: sobrescrever <code>service()</code>. CineSugere: <code>ApiServlet.service()</code> com switch no verbo.</li>
+<li>Slide: POST 201, DELETE 204. CineSugere: <code>criado()</code> responde 201 e <code>semConteudo()</code> 204.</li>
+</ul>
+<p class="key">Se o professor perguntar sobre PATCH: o ApiServlet já sobrescreve <code>service()</code>, então bastaria um <code>case "PATCH"</code> no switch.</p>`,
+
+`<h3>O que é JWT</h3>
+<p>Autenticação <b>stateless</b>: o servidor não guarda sessão (nem cookie de sessão). Os dados do usuário vão num <b>token</b> que o cliente manda em toda requisição:</p>
+<span class="f">Authorization: Bearer eyJhbGciOi...</span>
+<h3>As três partes</h3>
+<span class="f">Header     algoritmo e tipo (ex.: HS256)
+Payload    claims: id, nome, expiração
+Signature  assinatura digital
+
+token = header.payload.signature</span>
+<p>A <b>Signature</b> garante que o token não foi alterado no caminho. Atenção: o payload é só codificado (Base64), não escondido. Qualquer um consegue ler, então nada de senha lá dentro.</p>
+<h3>Biblioteca</h3>
+<p>O Java puro não gera JWT. Os slides recomendam a <b>java-jwt</b> da Auth0 (a alternativa é a jjwt).</p>
+<span class="f">&lt;dependency&gt;
+  &lt;groupId&gt;com.auth0&lt;/groupId&gt;
+  &lt;artifactId&gt;java-jwt&lt;/artifactId&gt;
+  &lt;version&gt;4.4.0&lt;/version&gt;
+&lt;/dependency&gt;</span>
+<h3>Gerando o token</h3>
+<span class="f">Algorithm alg = Algorithm.HMAC256("segredo");
+String token = JWT.create()
+    .withIssuer("minha-api")
+    .withClaim("userId", 123)
+    .withExpiresAt(data)
+    .sign(alg);</span>
+<h3>Verificando</h3>
+<p>Sempre num <b>Filter</b>, que roda antes do Servlet. Se o token for inválido ou estiver vencido, o filtro responde <b>401 Unauthorized</b> e o pedido nem chega ao controller.</p>
+<span class="f">JWT.require(alg).withIssuer("minha-api").build().verify(token);
+// token ruim → exceção → filtro responde 401</span>
+<p class="key">O guia do CineSugere não fala em login nem JWT. Se perguntarem, explique como seria: um filtro como o EncodingFilter, mas que lê o header Authorization e devolve 401 quando o token não vale.</p>`,
+
+`<h3>T1: Aplicação web MVC (10 pontos, entrega 17/09/2026)</h3>
+<ul>
+<li>Dupla, tema da lista do professor, Java com <b>MVC</b>, podendo usar <b>DAO</b> e <b>Service</b>.</li>
+<li>Pelo menos <b>um CRUD completo</b>.</li>
+<li>Etapas: ambiente (servidor local + MySQL), estrutura de pastas e rotas, tabelas + DAO + Service, interface com HTML/CSS/JS, testes, README e GitHub.</li>
+<li>Link no <b>diário de bordo</b>. Conta a participação dos dois no <b>Git</b>.</li>
+<li>Apresentação: demonstrar o CRUD em tempo real e explicar as pastas e o MVC numa funcionalidade.</li>
+</ul>
+<h3>T2: API (30 pontos, apresentação e entrega 26/11/2026)</h3>
+<ul>
+<li><b>API RESTful</b> completa em Java, padrão MVC com <b>Controller</b> (requisições e respostas), <b>Service</b> (regras) e <b>DAO</b> (banco).</li>
+<li><b>CRUD</b> sobre a entidade do tema e banco <b>MySQL</b>.</li>
+<li>Boas práticas de organização. Endpoints <b>documentados</b> (README, Postman ou Swagger).</li>
+<li>Projeto no <b>GitHub</b>, link no <b>disco virtual do AVA</b>.</li>
+<li>Apresentação em sala explicando estrutura e funcionamento. É a <b>continuação</b> do projeto da dupla. Avaliação <b>individual</b>.</li>
+</ul>
+<h3>Como o CineSugere atende cada item</h3>
+<span class="f">MVC + Service + DAO   controller/, service/, dao/, model/ na api/
+CRUD                  filmes, categorias e avaliações + sugestões
+MySQL                 container mysql no docker-compose
+Documentação          Swagger /api/docs/, Postman api/docs/, README
+Interface (T1)        web/: JSPs, CSS e index.jsp com fetch
+Testes                JUnit na camada Service (H2 em memória)
+GitHub                código no repositório da dupla</span>
+<p class="key">Leia o próximo bloco (parte=5 em diante) para o projeto em si, e termine pelo ensaio da apresentação.</p>`
+];
+
+/* junta na trilha CineSugere: as 4 fases de aula vêm antes */
+(function(){
+  const shifted = {};
+  CINE_TRACK.phases.forEach((_,i)=>{ shifted["cine:"+(i+APINET_PHASES.length)] = LESSONS["cine:"+i]; delete LESSONS["cine:"+i]; });
+  APINET_LESSONS.forEach((h,i)=>{ shifted["cine:"+i] = h; });
+  Object.assign(LESSONS, shifted);
+  CINE_TRACK.phases.unshift(...APINET_PHASES);
+  CINE_TRACK.tab = "Aplicações p/ Internet";
+  CINE_TRACK.dot = "P";
+  CINE_TRACK.intro = "Aplicações para Internet: o ambiente Java Web, a API REST com Servlets, JWT, os enunciados do T1 e do T2 e o projeto CineSugere (API RESTful + site em Java MVC), terminando com o ensaio da apresentação.";
+  CINE_TRACK.cola.unshift(
+    "Build: <code>mvn clean package</code> → <code>target/*.war</code>. O nome do .war vira o caminho (api.war → /api).",
+    "Servlet REST: <code>@WebServlet(\"/x/*\")</code>, id pelo PathInfo, corpo com Gson. POST 201, DELETE 204. PUT é total e idempotente; PATCH exige sobrescrever <code>service()</code>.",
+    "JWT: stateless, <code>Authorization: Bearer</code>, header.payload.signature, java-jwt da Auth0, validado num Filter que responde 401."
+  );
+})();
+
 /* ---------- estado ---------- */
 let trackIdx = 0;
 let S = null; // sessão de jogo
@@ -688,7 +1163,7 @@ function renderHome(){
   <header class="hero">
     <span class="eyebrow">Revisão para a prova</span>
     <h1>Revisão em Rede</h1>
-    <p class="muted">Duas trilhas: redes neurais recorrentes e redes de computadores. Cada fase começa com uma aula curta, depois vêm as perguntas, e cada resposta traz a explicação.</p>
+    <p class="muted">Três trilhas: redes neurais recorrentes, redes de computadores (Packet Tracer) e Aplicações para Internet, com o projeto CineSugere. Cada fase começa com uma aula curta, depois vêm as perguntas, e cada resposta traz a explicação.</p>
     <svg class="signal" viewBox="0 0 600 70" preserveAspectRatio="none" aria-hidden="true"><line class="base" x1="0" y1="35" x2="600" y2="35"/><path d="${signalPath()}"/></svg>
     <span class="mono muted" style="font-size:.8rem">x(n) = sen(n + sen(n²)), o sinal do exemplo de previsão da rede de Elman</span>
   </header>
@@ -702,7 +1177,7 @@ function renderHome(){
   <ol class="chain">
     ${tr.phases.map((ph,i)=>{ const b = best[tr.id+":"+i];
       return `<li class="node ${b!=null?"done":""}">
-        <div class="dot">${tr.label}=${i+1}</div>
+        <div class="dot">${tr.dot||tr.label+"="}${i+1}</div>
         <div class="info"><b>${ph.title}</b><span>${ph.sub} · ${ph.qs.length} questões</span></div>
         <div class="node-side">
           <div class="links"><button class="read" data-read="${i}">Aula</button><button class="play" data-phase="${i}" aria-label="Jogar a fase ${ph.title}">Jogar</button></div>
