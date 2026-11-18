@@ -1,0 +1,1372 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Revisão em Rede</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: uma coluna estreita; a trilha de fases é desenhada como uma rede desdobrada no tempo (nós ligados por setas) */
+:root{
+  --bg:#EDF0F5; --surface:#FFFFFF; --ink:#15203A; --muted:#58647F; --line:#CBD3E1;
+  --accent:#C2410C; --accent-ink:#FFFFFF; --accent-soft:#FBE6D8;
+  --net:#1D5FA8; --net-soft:#DCE8F7;
+  --ok:#0E7A5C; --ok-soft:#D5F1E6; --bad:#B42318; --bad-soft:#FADFDC;
+  --f-display:"Space Grotesk",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1322; --surface:#161F34; --ink:#E5EAF4; --muted:#93A0BB; --line:#2A3755;
+  --accent:#FB8B4D; --accent-ink:#1A0E05; --accent-soft:#3A2416;
+  --net:#6FA8EC; --net-soft:#16294A;
+  --ok:#3DD3A3; --ok-soft:#10352A; --bad:#F77C7C; --bad-soft:#3C1B1E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1322; --surface:#161F34; --ink:#E5EAF4; --muted:#93A0BB; --line:#2A3755;
+  --accent:#FB8B4D; --accent-ink:#1A0E05; --accent-soft:#3A2416;
+  --net:#6FA8EC; --net-soft:#16294A;
+  --ok:#3DD3A3; --ok-soft:#10352A; --bad:#F77C7C; --bad-soft:#3C1B1E; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55}
+.wrap{max-width:760px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--f-display);line-height:1.15;margin:0;text-wrap:balance}
+h1{font-size:clamp(2rem,6vw,2.8rem);letter-spacing:-.02em}
+h2{font-size:1.35rem}
+p{margin:0}
+.mono,code{font-family:var(--f-mono);font-size:.92em}
+code{background:var(--net-soft);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.muted{color:var(--muted)}
+.eyebrow{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* hero */
+.hero{display:flex;flex-direction:column;gap:10px}
+.signal{width:100%;height:70px;display:block}
+.signal path{fill:none;stroke:var(--accent);stroke-width:2}
+.signal .base{stroke:var(--line);stroke-width:1}
+
+/* trilhas */
+.tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px}
+.tab{flex:1;min-width:0;border:0;background:transparent;border-radius:8px;padding:10px 8px;font-weight:600;font-size:.95rem;color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.track-intro{display:flex;flex-direction:column;gap:6px}
+
+.chain{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0}
+.node{position:relative;display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;padding:10px 0}
+.node:not(:last-child)::after{content:"";position:absolute;left:25px;top:52px;bottom:-10px;width:2px;background:var(--line)}
+.node .dot{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-mono);font-size:.8rem;font-weight:600;border:2px solid var(--line);background:var(--surface);position:relative;z-index:1}
+.node.done .dot{border-color:var(--ok);color:var(--ok)}
+.node .info{min-width:0}
+.node .info b{display:block;font-family:var(--f-display);font-weight:700;font-size:1.02rem}
+.node .info span{font-size:.88rem;color:var(--muted)}
+.node .best{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);text-align:right}
+.node button.play{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px;font-weight:600;font-size:.9rem}
+.node button.play:hover{border-color:var(--accent);color:var(--accent)}
+.node-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+
+.cta-row{display:flex;flex-wrap:wrap;gap:10px}
+.btn{border:0;border-radius:10px;padding:13px 18px;font-weight:600;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;border:1.5px solid var(--ink);color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+details.cola{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
+details.cola summary{cursor:pointer;font-weight:600}
+details.cola ul{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:.93rem}
+
+/* jogo */
+.hud{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;font-family:var(--f-mono);font-size:.85rem}
+.hud .left{display:flex;gap:14px;flex-wrap:wrap}
+.hud b{font-variant-numeric:tabular-nums}
+.combo{color:var(--accent);font-weight:600}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:16px}
+.qhead{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.qtext{font-size:1.08rem;font-weight:500}
+.qtext .f,.exp .f{display:block;font-family:var(--f-mono);background:var(--net-soft);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:.92rem;white-space:pre-wrap;overflow-wrap:anywhere}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{text-align:left;border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:12px 14px;display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
+.opt .k{font-family:var(--f-mono);font-size:.8rem;border:1px solid var(--line);border-radius:6px;height:24px;display:grid;place-items:center;color:var(--muted)}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt.gone{opacity:.3}
+.opt:disabled{cursor:default}
+.vf{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vf .opt{grid-template-columns:1fr;text-align:center;font-weight:600}
+.fields{display:flex;flex-direction:column;gap:10px}
+.field{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,170px);gap:10px;align-items:center}
+.field label{font-family:var(--f-mono);font-size:.92rem}
+.field input{font:inherit;font-family:var(--f-mono);padding:10px 12px;border-radius:8px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+.field input.right{border-color:var(--ok);background:var(--ok-soft)}
+.field input.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.ord-pool,.ord-pick{display:flex;flex-direction:column;gap:8px}
+.ord-pick{min-height:20px}
+.ord-pick .opt{grid-template-columns:28px 1fr}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;padding:6px 2px;font-size:.9rem}
+.fb{border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.fb.ok{background:var(--ok-soft)}
+.fb.no{background:var(--bad-soft)}
+.fb h3{font-size:1.05rem}
+.fb.ok h3{color:var(--ok)} .fb.no h3{color:var(--bad)}
+.exp{font-size:.95rem}
+.tag{font-family:var(--f-mono);font-size:.78rem;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.tag.net{background:var(--net-soft);color:var(--net)}
+
+/* aula */
+.lesson{display:flex;flex-direction:column;gap:12px;font-size:1rem;max-width:68ch}
+.lesson h3{font-size:1.08rem;margin-top:8px}
+.lesson ul,.lesson ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+.lesson .f{display:block;font-family:var(--f-mono);background:var(--net-soft);border-radius:8px;padding:10px 12px;margin-top:6px;font-size:.9rem;white-space:pre-wrap;overflow-wrap:anywhere}
+.lesson .key{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 12px;border-radius:0 8px 8px 0}
+.node .links{display:flex;gap:6px;align-items:center}
+.node button.read{border:0;background:none;color:var(--muted);text-decoration:underline;padding:8px 4px;font-size:.88rem}
+/* fim */
+.big{font-family:var(--f-display);font-size:3rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:12px}
+.stat b{display:block;font-family:var(--f-display);font-size:1.5rem;font-variant-numeric:tabular-nums}
+.stat span{font-size:.8rem;color:var(--muted)}
+.review{display:flex;flex-direction:column;gap:12px}
+.review article{border-left:3px solid var(--bad);padding:2px 0 2px 12px;display:flex;flex-direction:column;gap:6px;font-size:.93rem}
+.review article .q{font-weight:600}
+@media (max-width:480px){.field{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr 1fr}.big{font-size:2.4rem}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@keyframes pop{0%{transform:scale(.97)}100%{transform:scale(1)}}
+.fb{animation:pop .18s ease-out;transform-origin:top left}
+</style>
+</head>
+<body>
+
+<main class="wrap" id="app"></main>
+
+<script>
+(function(){
+"use strict";
+/* ---------- utilidades ---------- */
+const $ = s => document.querySelector(s);
+const app = $("#app");
+const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const rnd = (min,max,step=0.01) => +(Math.round((min+Math.random()*(max-min))/step)*step).toFixed(2);
+const nz = (min,max) => { let v; do { v = rnd(min,max); } while (Math.abs(v) < 0.05); return v; };
+const fmt = v => { const s = (+(+v).toFixed(4)).toString().replace(".", ","); return s.startsWith("-") ? "−"+s.slice(1) : s; };
+const par = v => v < 0 ? "("+fmt(v)+")" : fmt(v);
+const parseNum = s => { s = String(s).trim().replace(/\s/g,"").replace(/[−–]/g,"-").replace(",", "."); return s === "" ? NaN : Number(s); };
+const near = (u,a) => Math.abs(u-a) <= Math.max(0.0015, Math.abs(a)*0.01);
+const store = {
+  get(){ try { return JSON.parse(localStorage.getItem("revisao-em-rede")||"{}"); } catch(e){ return {}; } },
+  set(o){ try { localStorage.setItem("revisao-em-rede", JSON.stringify(o)); } catch(e){} }
+};
+
+/* ---------- geradores: BPTT ---------- */
+const G = {};
+G.deltaFinal = () => {
+  const phi = rnd(0.12,0.25), e = nz(-0.9,0.9), d = phi*e;
+  return { t:"num",
+    q:`Último instante do intervalo de treino, <b>n = n₁ = 3</b>. O neurônio j tem φ'(vⱼ(3)) = <b>${fmt(phi)}</b> e erro eⱼ(3) = <b>${fmt(e)}</b>. Calcule o gradiente local.`,
+    fields:[{label:"δⱼ(3) =", ans:d}],
+    hint:"Em n₁ não existe instante futuro, então só entra o erro atual: δⱼ(n₁) = φ'(vⱼ(n₁))·eⱼ(n₁).",
+    exp:`Em n = n₁ não há erro vindo do futuro.<span class="f">δⱼ(3) = φ'·e = ${fmt(phi)} · ${par(e)} = ${fmt(d)}</span>` };
+};
+G.deltaLogistic = () => {
+  const tanh = Math.random() < 0.5;
+  if (!tanh){
+    const y = rnd(0.2,0.9,0.05), dd = pick([0,1]), e = dd - y, phi = y*(1-y), d = phi*e;
+    return { t:"num",
+      q:`Neurônio de saída com função <b>logística</b>, em n = n₁. A saída foi yⱼ = <b>${fmt(y)}</b> e a resposta desejada era dⱼ = <b>${dd}</b>. Calcule φ'(vⱼ) e δⱼ(n₁). (Use e = d − y.)`,
+      fields:[{label:"φ'(vⱼ) =", ans:phi},{label:"δⱼ(n₁) =", ans:d}],
+      hint:"Na logística, φ'(v) = y·(1 − y). Depois, δ = φ'·e com e = d − y.",
+      exp:`<span class="f">e = d − y = ${dd} − ${fmt(y)} = ${fmt(e)}
+φ' = y(1 − y) = ${fmt(y)} · ${fmt(1-y)} = ${fmt(phi)}
+δ = φ'·e = ${fmt(phi)} · ${par(e)} = ${fmt(d)}</span>` };
+  }
+  const y = nz(-0.8,0.8), dd = nz(-0.9,0.9), e = dd - y, phi = 1 - y*y, d = phi*e;
+  return { t:"num",
+    q:`Neurônio de saída com <b>tangente hiperbólica</b>, em n = n₁. A saída foi yⱼ = <b>${fmt(y)}</b> e a desejada dⱼ = <b>${fmt(dd)}</b>. Calcule φ'(vⱼ) e δⱼ(n₁). (Use e = d − y.)`,
+    fields:[{label:"φ'(vⱼ) =", ans:phi},{label:"δⱼ(n₁) =", ans:d}],
+    hint:"Na tanh, φ'(v) = 1 − y². Depois, δ = φ'·e com e = d − y.",
+    exp:`<span class="f">e = d − y = ${fmt(dd)} − ${par(y)} = ${fmt(e)}
+φ' = 1 − y² = 1 − ${par(y)}² = ${fmt(phi)}
+δ = φ'·e = ${fmt(phi)} · ${par(e)} = ${fmt(d)}</span>` };
+};
+G.deltaMid = () => {
+  const phi = rnd(0.1,0.25), e = nz(-0.6,0.6), w = nz(-1.5,1.5), dn = nz(-0.3,0.3), d = phi*(e + w*dn);
+  return { t:"num",
+    q:`Instante intermediário, n₀ &lt; n = 4 &lt; n₁. Neurônio j com φ'(vⱼ(4)) = <b>${fmt(phi)}</b> e erro eⱼ(4) = <b>${fmt(e)}</b>. Ele se liga a um único neurônio k pelo peso wⱼₖ = <b>${fmt(w)}</b>, que já tem δₖ(5) = <b>${fmt(dn)}</b>. Calcule δⱼ(4).`,
+    fields:[{label:"δⱼ(4) =", ans:d}],
+    hint:"Erro atual + erro do futuro: δⱼ(n) = φ'(vⱼ(n))·[eⱼ(n) + wⱼₖ·δₖ(n+1)].",
+    exp:`Antes de n₁, o gradiente local soma o erro atual com o erro que volta do instante seguinte.<span class="f">δⱼ(4) = φ' · [e + w·δₖ(5)]
+      = ${fmt(phi)} · [${fmt(e)} + ${par(w)}·${par(dn)}]
+      = ${fmt(phi)} · [${fmt(e)} + ${par(w*dn)}]
+      = ${fmt(phi)} · ${par(e+w*dn)} = ${fmt(d)}</span>` };
+};
+G.deltaSum = () => {
+  const phi = rnd(0.1,0.25), e = nz(-0.5,0.5), w1 = nz(-1.2,1.2), d1 = nz(-0.3,0.3), w2 = nz(-1.2,1.2), d2 = nz(-0.3,0.3);
+  const s = w1*d1 + w2*d2, d = phi*(e + s);
+  return { t:"num",
+    q:`Agora com <b>dois</b> neurônios no instante seguinte. Em n = 2 (n₀ = 0, n₁ = 3): φ'(vⱼ(2)) = <b>${fmt(phi)}</b>, eⱼ(2) = <b>${fmt(e)}</b>. Ligações: wⱼ₁ = <b>${fmt(w1)}</b> com δ₁(3) = <b>${fmt(d1)}</b>; wⱼ₂ = <b>${fmt(w2)}</b> com δ₂(3) = <b>${fmt(d2)}</b>. Calcule o somatório e δⱼ(2).`,
+    fields:[{label:"Σₖ wⱼₖ δₖ(3) =", ans:s},{label:"δⱼ(2) =", ans:d}],
+    hint:"Some w·δ de cada neurônio k do instante n+1, junte com o erro atual e multiplique por φ'.",
+    exp:`<span class="f">Σ = ${par(w1)}·${par(d1)} + ${par(w2)}·${par(d2)} = ${fmt(w1*d1)} + ${par(w2*d2)} = ${fmt(s)}
+δⱼ(2) = ${fmt(phi)} · [${fmt(e)} + ${par(s)}] = ${fmt(phi)} · ${par(e+s)} = ${fmt(d)}</span>` };
+};
+G.chain = () => {
+  const p2 = rnd(0.12,0.25), e2 = nz(-0.8,0.8), p1 = rnd(0.12,0.25), e1 = nz(-0.5,0.5), w = nz(-1.5,1.5);
+  const d2 = p2*e2, d1 = p1*(e1 + w*d2);
+  return { t:"num",
+    q:`Mini BPTT com um neurônio auto-realimentado (peso recorrente w = <b>${fmt(w)}</b>), intervalo n₀ = 0 até n₁ = 2.<span class="f">n = 2:  φ' = ${fmt(p2)}   e = ${fmt(e2)}
+n = 1:  φ' = ${fmt(p1)}   e = ${fmt(e1)}</span>Faça o passo para trás: primeiro δ(2), depois δ(1).`,
+    fields:[{label:"δ(2) =", ans:d2},{label:"δ(1) =", ans:d1}],
+    hint:"O passo para trás vai de n₁ até n₀. δ(2) = φ'(2)·e(2). Depois δ(1) = φ'(1)·[e(1) + w·δ(2)].",
+    exp:`O passo para trás começa no fim do intervalo.<span class="f">δ(2) = ${fmt(p2)} · ${par(e2)} = ${fmt(d2)}
+δ(1) = ${fmt(p1)} · [${fmt(e1)} + ${par(w)}·${par(d2)}]
+     = ${fmt(p1)} · ${par(e1+w*d2)} = ${fmt(d1)}</span>` };
+};
+G.dw = () => {
+  const eta = pick([0.1,0.2,0.5]), d = [nz(-0.3,0.3),nz(-0.3,0.3),nz(-0.3,0.3)], x = [nz(-1,1),nz(-1,1),nz(-1,1)];
+  const s = d[0]*x[0]+d[1]*x[1]+d[2]*x[2], dw = eta*s;
+  return { t:"num",
+    q:`Ajuste do peso wⱼᵢ no BPTT por época, com n₀ = 0, n₁ = 3 e η = <b>${fmt(eta)}</b>.<span class="f">δⱼ(1) = ${fmt(d[0])}   δⱼ(2) = ${fmt(d[1])}   δⱼ(3) = ${fmt(d[2])}
+xᵢ(0) = ${fmt(x[0])}   xᵢ(1) = ${fmt(x[1])}   xᵢ(2) = ${fmt(x[2])}</span>Calcule Δwⱼᵢ.`,
+    fields:[{label:"Δwⱼᵢ =", ans:dw}],
+    hint:"Δwⱼᵢ = η · Σ δⱼ(n)·xᵢ(n−1), somando de n = n₀+1 até n₁. Repare no n−1 da entrada.",
+    exp:`Cada δ do instante n multiplica a entrada do instante anterior (n−1).<span class="f">Σ = δ(1)x(0) + δ(2)x(1) + δ(3)x(2)
+  = ${par(d[0])}·${par(x[0])} + ${par(d[1])}·${par(x[1])} + ${par(d[2])}·${par(x[2])}
+  = ${fmt(d[0]*x[0])} + ${par(d[1]*x[1])} + ${par(d[2]*x[2])} = ${fmt(s)}
+Δw = η·Σ = ${fmt(eta)} · ${par(s)} = ${fmt(dw)}</span>` };
+};
+G.stateSpace = () => {
+  const a = rnd(0.3,0.9,0.1), b = rnd(0.5,1.5,0.1), c = rnd(0.5,2,0.5), x0 = nz(-1,1), u0 = nz(-1,1), u1 = nz(-1,1);
+  const x1 = a*x0 + b*u0, x2 = a*x1 + b*u1, y2 = c*x2;
+  return { t:"num",
+    q:`Modelo de espaço de estados linear (escalar):<span class="f">x(n+1) = ${fmt(a)}·x(n) + ${fmt(b)}·u(n)
+y(n)   = ${fmt(c)}·x(n)</span>Com x(0) = <b>${fmt(x0)}</b>, u(0) = <b>${fmt(u0)}</b> e u(1) = <b>${fmt(u1)}</b>, calcule x(1), x(2) e y(2).`,
+    fields:[{label:"x(1) =", ans:x1},{label:"x(2) =", ans:x2},{label:"y(2) =", ans:y2}],
+    hint:"Aplique x(n+1) = A·x(n) + B·u(n) duas vezes e depois y = C·x.",
+    exp:`<span class="f">x(1) = ${fmt(a)}·${par(x0)} + ${fmt(b)}·${par(u0)} = ${fmt(x1)}
+x(2) = ${fmt(a)}·${par(x1)} + ${fmt(b)}·${par(u1)} = ${fmt(x2)}
+y(2) = ${fmt(c)}·${par(x2)} = ${fmt(y2)}</span>` };
+};
+
+/* ---------- geradores: sub-rede (Redes 2) ---------- */
+const ipStr = a => a.join(".");
+const maskOf = p => { const m=[]; for(let i=0;i<4;i++){ const bits=Math.max(0,Math.min(8,p-8*i)); m.push(bits?256-Math.pow(2,8-bits):0);} return m; };
+G.hosts = () => {
+  const p = pick([8,16,24,30]), m = maskOf(p), n = Math.pow(2,32-p)-2;
+  const where = {8:"um enlace serial do Cenário 7 (10.0.0.0)", 16:"uma LAN do Cenário 5B (172.19.0.0)", 24:"uma LAN do Cenário 5B (192.168.5.0)", 30:"um enlace serial do Cenário 5B (10.0.0.0)"}[p];
+  return { t:"num",
+    q:`Quantos endereços de host <b>utilizáveis</b> existem na máscara <code>${ipStr(m)}</code> (/${p})? Ela aparece, por exemplo, em ${where}.`,
+    fields:[{label:"hosts =", ans:n, exact:true}],
+    hint:"Hosts utilizáveis = 2^(bits de host) − 2. Bits de host = 32 − prefixo.",
+    exp:`<span class="f">/${p} → ${32-p} bits de host
+2^${32-p} − 2 = ${n.toLocaleString("pt-BR")}</span>Tira-se 2 porque o endereço de rede e o de broadcast não vão para hosts.${p===30?" Por isso /30 é o padrão para enlaces ponto a ponto: sobram exatamente 2 IPs, um para cada roteador.":""}` };
+};
+G.netAddr = () => {
+  const cases = [
+    {ip:[172,19,200,pick([201,215,230,249])], p:16, note:"um PC da LAN direita do Cenário 5B"},
+    {ip:[192,168,5,pick([100,104,109])], p:24, note:"o PC1 do Cenário 5B"},
+    {ip:[10,0,0,pick([1,2])], p:30, note:"uma ponta do enlace R1–R2 do Cenário 5B"},
+    {ip:[172,21,0,pick([1,7])], p:16, note:"o enlace Router1–switch L3 do Cenário 6"},
+    {ip:[172,18,50,pick([50,254])], p:16, note:"a LAN do Laptop2 no Cenário 7"},
+    {ip:[30,0,0,pick([1,2])], p:30, note:"o enlace switch L3–Router_2 do Cenário 6B"}
+  ];
+  const c = pick(cases), m = maskOf(c.p);
+  const net = c.ip.map((o,i)=>o & m[i]), bc = c.ip.map((o,i)=>(o & m[i]) | (255 - m[i]));
+  return { t:"txt",
+    q:`O IP <code>${ipStr(c.ip)}</code> com máscara <code>${ipStr(m)}</code> é ${c.note}. Qual é o <b>endereço de rede</b> e o de <b>broadcast</b>?`,
+    fields:[{label:"rede =", ans:ipStr(net)},{label:"broadcast =", ans:ipStr(bc)}],
+    hint:"Rede: zere os bits de host (onde a máscara tem 0). Broadcast: ponha 1 em todos eles.",
+    exp:`<span class="f">IP       ${ipStr(c.ip)}
+máscara  ${ipStr(m)}  (/${c.p})
+rede     ${ipStr(net)}
+bcast    ${ipStr(bc)}</span>` };
+};
+G.dhcp = () => {
+  const c = pick([
+    {pool:"LAN_ESQUERDA (DHCP-ESQ)", start:[192,168,5,100], max:10},
+    {pool:"LAN_DIREITA (DHCP-DIR)", start:[172,19,200,200], max:50},
+    {pool:"LAN_DIREITA com outro tamanho", start:[172,19,200,200], max:pick([20,30,40])},
+    {pool:"LAN_ESQUERDA com outro tamanho", start:[192,168,5,100], max:pick([5,20,50])}
+  ]);
+  const last = c.start.slice(); last[3] += c.max - 1;
+  return { t:"txt",
+    q:`No pool <b>${c.pool}</b>, o Start IP é <code>${ipStr(c.start)}</code> e o Max Users é <b>${c.max}</b>. Qual é o <b>último</b> IP que o DHCP pode entregar?`,
+    fields:[{label:"último IP =", ans:ipStr(last)}],
+    hint:"O primeiro IP já conta como um usuário. Último = início + (Max Users − 1).",
+    exp:`<span class="f">${c.start[3]} + (${c.max} − 1) = ${last[3]}  →  ${ipStr(last)}</span>Por isso, no 5B, o PC1 recebe entre 192.168.5.100 e .109, e a LAN direita entre 172.19.200.200 e .249.` };
+};
+
+/* ---------- conteúdo ---------- */
+const TRACKS = [
+{ id:"rnn", tab:"Redes Recorrentes", label:"n", tag:"IA",
+  intro:"Seis instantes, do conceito ao cálculo. A rede de fases é a própria rede desdobrada no tempo: cada fase é uma camada.",
+  cola:[
+    "NARX realimenta a <b>saída</b> por linha de atraso. Elman realimenta o <b>estado interno</b>.",
+    "NARX para regressão usa a saída <b>real</b> (imposição do professor). NOE usa as <b>próprias predições</b> e é recorrente de verdade.",
+    "Espaço de estados linear: <code>x(n+1) = Ax(n) + Bu(n)</code>, <code>y(n) = Cx(n)</code>.",
+    "Treino por época: reinicia o estado a cada época. Contínuo: não reinicia.",
+    "BPTT: desdobrar no tempo, pesos <b>compartilhados</b>, δ de n₁ até n₀.",
+    "<code>δⱼ(n₁) = φ'(vⱼ)·eⱼ(n₁)</code> e, antes de n₁, <code>δⱼ(n) = φ'(vⱼ)·[eⱼ(n) + Σₖ wⱼₖ δₖ(n+1)]</code>.",
+    "<code>Δwⱼᵢ = η Σ δⱼ(n)·xᵢ(n−1)</code>, de n₀+1 até n₁."
+  ],
+  phases:[
+  { title:"Arquiteturas", sub:"NARX, Elman, espaço de estados, RMLP", qs:[
+    {t:"mc", q:"O que diferencia uma rede recorrente de um MLP estático?", o:["Ter realimentação (feedback) da saída ou de neurônios ocultos para a entrada","Ter mais de uma camada oculta","Usar função de ativação linear na saída","Ser treinada apenas no modo por lote"], exp:"A rede recorrente é um MLP com realimentação. Por causa dela, a saída passa a depender da história do sinal: a resposta é dirigida dinamicamente."},
+    {t:"mc", q:"Qual arquitetura combina entradas exógenas u(n) com saídas atrasadas y(n), usando uma linha de atraso na saída?", o:["NARX","Rede de Elman","RMLP","Espaço de estados linear"], exp:"NARX = Nonlinear AutoRegressive with eXogenous inputs. É um MLP que recebe u(n) e as saídas passadas y(n), y(n−1)… vindas de uma linha de atraso."},
+    {t:"mc", q:"Na rede de Elman, o que volta para a entrada?", o:["O estado interno, ou seja, a saída dos neurônios ocultos","A saída da rede, por uma linha de atraso","O erro da saída","Os pesos da época anterior"], exp:"Elman realimenta o estado: x(n+1) = F(x(n), u(n)) e y(n) = G(x(n)). Não há banco de atrasos na saída."},
+    {t:"mc", q:"O que caracteriza o RMLP (Perceptron de Múltiplas Camadas Recorrente)?", o:["Cada camada computacional tem a sua própria realimentação","Só a camada de saída é realimentada","Não tem camadas ocultas","Usa apenas neurônios lineares"], exp:"No RMLP cada camada tem realimentação própria, em vez de uma única malha global."},
+    {t:"mc", q:"As equações x(n+1) = Ax(n) + Bu(n) e y(n) = Cx(n) descrevem qual modelo?", o:["Espaço de estados linear","NARX","Modelo NOE","Rede de Elman não-linear"], exp:"É o modelo de espaço de estados linear. Ele é útil quando se conhece a estrutura do sistema. Na versão não-linear, uma função F(·) toma o lugar de A e B."},
+    {t:"vf", q:"A realimentação permite à rede representar um estado, o que reduz as exigências de memória.", a:true, exp:"Verdadeiro. O estado resume o passado, então a rede não precisa receber uma janela enorme de entradas antigas."},
+    {t:"vf", q:"A rede de Elman tem um banco de atrasos na saída, igual ao NARX.", a:false, exp:"Falso. Elman não tem banco de atrasos na saída. Quem realimenta a saída é o NARX; o Elman realimenta o estado interno."}
+  ]},
+  { title:"NARX, NOE e estados", sub:"Regressão × recorrência, equivalência", qs:[
+    {t:"mc", q:"A fórmula y(n+1) = F(y(n), …, y(n−q+1), u(n), …, u(n−q+1)) é de qual modelo?", o:["NARX","Elman","Espaço de estados linear","RMLP"], exp:"A saída futura depende das q saídas passadas e das q entradas exógenas passadas. É o NARX."},
+    {t:"mc", q:"No NARX para regressão (aprendizado por imposição do professor), as saídas atrasadas que entram na rede são:", o:["As saídas reais medidas do sistema","As predições anteriores da própria rede","Os erros de predição","Os estados ocultos"], exp:"Na imposição do professor entram as saídas verdadeiras do sistema. Não há realimentação de erros, por isso o modelo funciona, na prática, como uma rede não-recorrente."},
+    {t:"mc", q:"No modelo NOE (Nonlinear Output Error), o que alimenta a linha de atraso?", o:["As predições passadas da própria rede","As saídas medidas do sistema","Somente a entrada u(n)","O gradiente local δ"], exp:"O NOE usa as próprias predições no lugar das saídas medidas. Assim a rede vira uma rede recorrente “pura”."},
+    {t:"vf", q:"O NARX para regressão e o modelo NOE são a mesma coisa.", a:false, exp:"Falso. NARX para regressão usa a saída real (não-recorrente na prática). NOE usa a predição da rede (recorrente)."},
+    {t:"mc", q:"Em que condição o modelo NARX pode simular um modelo de espaço de estados?", o:["Quando a rede recorrente é observável","Quando todas as ativações são lineares","Quando há só uma camada oculta","Quando é treinada por época"], exp:"Equivalência dos modelos: se a rede recorrente é observável, o NARX consegue simular o modelo de espaço de estados."},
+    {t:"mc", q:"No espaço de estados não-linear, o que toma o lugar das matrizes A e B?", o:["Uma função não-linear F(·), em x(n+1) = F(x(n), u(n))","A matriz C","Uma linha de atraso na saída","O passo de aprendizagem η"], exp:"No caso linear, x(n+1) = Ax(n) + Bu(n). No não-linear, uma função F(·) faz esse papel."},
+    {gen:"stateSpace"}
+  ]},
+  { title:"Treinamento", sub:"Época, contínuo, BPTT, ARTR", qs:[
+    {t:"mc", q:"Como funciona o treinamento por época numa rede recorrente?", o:["A rede parte de um estado inicial e é reinicializada a cada época","A rede nunca é reinicializada","Os pesos são sorteados de novo a cada época","Só a camada de saída é treinada"], exp:"No treino por época há um estado inicial; a cada nova época a rede volta para ele."},
+    {t:"mc", q:"E o treinamento contínuo?", o:["Não há reinicialização: a rede aprende enquanto processa o sinal","A rede é reinicializada a cada amostra","Treina-se uma época e depois os pesos ficam fixos","Só funciona em redes estáticas"], exp:"No contínuo não existe reinício de estado. A rede aprende ao mesmo tempo em que processa."},
+    {t:"mc", q:"Um sensor manda dados sem parar e você quer que a rede aprenda online. Qual modo combina com isso?", o:["Treinamento contínuo","Treinamento por época","Modo por lote de rede estática","Nenhum: redes recorrentes não aprendem online"], exp:"Sinal sem fim e aprendizado durante o processamento é exatamente o treino contínuo."},
+    {t:"mc", q:"Para redes estáticas (a referência), quais são os dois modos de treino?", o:["Por lote e sequencial","Por época e contínuo","BPTT e ARTR","Supervisionado e por reforço"], exp:"Redes estáticas: lote ou sequencial. Para redes recorrentes, a aula fala em treino por época e contínuo."},
+    {t:"mc", q:"Qual é o principal algoritmo de treino de redes recorrentes visto na aula?", o:["BPTT (Backpropagation Through Time)","Algoritmo genético","Regra de Hebb","LVQ"], exp:"O BPTT estende o backpropagation para o tempo, desdobrando a rede."},
+    {t:"mc", q:"O ARTR se baseia em:", o:["Uma estimativa instantânea do gradiente","Desdobrar a rede inteira e somar o gradiente da época","Busca aleatória nos pesos","Mapas auto-organizáveis"], exp:"O ARTR trabalha com a estimativa instantânea do gradiente, a cada passo."},
+    {t:"vf", q:"No treinamento contínuo, o estado da rede é zerado no começo de cada sequência.", a:false, exp:"Falso. Zerar o estado é característica do treino por época. No contínuo não há reinicialização."}
+  ]},
+  { title:"BPTT na teoria", sub:"Desdobrar, δ com erro futuro, Δw", qs:[
+    {t:"mc", q:"Qual é o primeiro passo do BPTT?", o:["Desdobrar a rede no tempo: cada passo de tempo vira uma camada","Calcular δ no instante n₀","Zerar os pesos","Sortear a ordem dos padrões"], exp:"Desdobrando, a rede recorrente vira uma rede em camadas, uma por instante, e dá para aplicar o backpropagation."},
+    {t:"mc", q:"Na rede desdobrada, os pesos das camadas de cada instante são:", o:["Compartilhados: são cópias dos mesmos pesos","Independentes e ajustados separadamente","Fixos e iguais a 1","Diferentes em cada instante e sorteados"], exp:"Cada camada desdobrada é uma cópia da mesma rede, então os pesos são compartilhados. Por isso o ajuste soma as contribuições de todos os instantes."},
+    {t:"mc", q:"Qual é a função de custo do BPTT por época no intervalo (n₀, n₁)?", o:["E_total = ½ Σₙ Σⱼ eⱼ²(n), somando de n₀ até n₁","E = ½ eⱼ²(n₁), só no último instante","E = Σ |eⱼ(n₀)|","E = ½ Σⱼ eⱼ²(n₀)"], exp:"O custo soma o erro quadrático de todos os neurônios em todos os instantes do intervalo."},
+    {t:"mc", q:"No passo para trás, em que ordem os gradientes locais δⱼ(n) são calculados?", o:["De n₁ até n₀ (do fim para o começo)","De n₀ até n₁","Todos ao mesmo tempo, sem ordem","Só no instante n₁"], exp:"O δ de um instante depende do δ do instante seguinte, então é preciso começar pelo fim (n₁)."},
+    {t:"mc", q:"Para n₀ < n < n₁, δⱼ(n) = φ'(vⱼ(n)) · [ ? ]", o:["eⱼ(n) + Σₖ wⱼₖ δₖ(n+1)","eⱼ(n) apenas","Σₖ wⱼₖ δₖ(n−1)","eⱼ(n) · δₖ(n+1)"], exp:"Erro atual + erro do futuro. Esse termo Σₖ wⱼₖ δₖ(n+1) é o que diferencia o BPTT do backpropagation padrão."},
+    {t:"mc", q:"E no último instante, n = n₁?", o:["δⱼ(n₁) = φ'(vⱼ(n₁)) · eⱼ(n₁)","δⱼ(n₁) = 0","δⱼ(n₁) = eⱼ(n₁) + Σₖ wⱼₖ δₖ(n₁+1)","δⱼ(n₁) = η · eⱼ(n₁)"], exp:"Em n₁ não existe futuro dentro do intervalo, então só entra o erro atual."},
+    {t:"mc", q:"Como fica o ajuste dos pesos no BPTT por época?", o:["Δwⱼᵢ = η Σ δⱼ(n) · xᵢ(n−1), de n₀+1 até n₁","Δwⱼᵢ = η δⱼ(n₁) · xᵢ(n₁)","Δwⱼᵢ = δⱼ(n₀) / η","Δwⱼᵢ = η Σ eⱼ(n)"], exp:"Como os pesos são compartilhados, somam-se as contribuições de todos os instantes. Repare no xᵢ(n−1): é a entrada do instante anterior."},
+    {t:"ord", q:"Coloque os passos do BPTT por época na ordem certa.", items:["Desdobrar a rede no tempo (uma camada por instante)","Passo para frente: propagar o padrão temporal completo de n₀ a n₁","Passo para trás: calcular δⱼ(n) de n₁ até n₀","Ajustar os pesos compartilhados com Δw = η Σ δ·x"], exp:"Desdobra, propaga para frente guardando tudo, volta calculando os δ do fim para o começo e, por último, ajusta os pesos."},
+    {t:"vf", q:"No BPTT, o gradiente local antes de n₁ soma o erro atual com o erro que vem do futuro.", a:true, exp:"Verdadeiro. Esse é o ponto-chave do BPTT e cai muito em prova."}
+  ]},
+  { title:"BPTT na ponta do lápis", sub:"Contas com valores sorteados", qs:[
+    {gen:"deltaFinal"},{gen:"deltaLogistic"},{gen:"deltaMid"},{gen:"deltaSum"},{gen:"chain"},{gen:"dw"}
+  ]},
+  { title:"Elman e séries temporais", sub:"Finding Structure in Time, sen(n + sen(n²))", qs:[
+    {t:"mc", q:"Em qual artigo Elman apresentou a sua rede?", o:["Finding Structure in Time (1990)","Learning Representations by Back-propagating Errors (1986)","Long Short-Term Memory (1997)","A Logical Calculus of the Ideas Immanent in Nervous Activity (1943)"], exp:"“Finding Structure in Time”, de Jeffrey Elman, 1990."},
+    {t:"mc", q:"Qual tarefa foi usada para mostrar que a rede de Elman reconhece padrões temporais relativos?", o:["XOR sequencial","Classificação de dígitos","Controle de pêndulo","Agrupamento de animais"], exp:"O XOR sequencial: a rede precisa lembrar dos bits anteriores para prever o próximo."},
+    {t:"mc", q:"No experimento de predição de letras, onde o erro de predição cai mais?", o:["Nas vogais (a, i, u)","Nas consoantes","Igualmente em todas as letras","Só no fim de cada frase"], exp:"A vogal é previsível depois da consoante que a inicia, então o erro cai nelas. As consoantes aparecem sem padrão previsível e continuam com erro maior."},
+    {t:"mc", q:"Para prever uma série temporal, a rede de Elman recebe x(n) e o estado atual. O que ela deve prever?", o:["x(n+1)","x(n−1)","O erro e(n)","Os pesos da próxima época"], exp:"Previsão um passo à frente: x(n+1)."},
+    {t:"mc", q:"Qual sinal foi usado no exemplo de previsão?", o:["x(n) = sen(n + sen(n²)), de frequência modulada","x(n) = sen(n), senoide pura","x(n) = n², parábola","Ruído branco gaussiano"], exp:"x(n) = sen(n + sen(n²)): uma senoide cuja frequência muda com o tempo."},
+    {t:"mc", q:"Qual configuração foi usada no exemplo?", o:["GDX, 1000 passos e 10 unidades ocultas","GDX, 100 passos e 1 unidade oculta","BPTT puro, 10 passos e 1000 unidades ocultas","Algoritmo genético com 50 indivíduos"], exp:"GDX, 1000 passos de treino e 10 unidades ocultas."},
+    {t:"vf", q:"No exemplo, o treino usa 200 instantes e o teste usa 100 instantes (de 150 a 250), dos quais 50 se sobrepõem ao treino.", a:true, exp:"Verdadeiro. A parte de 150 a 200 aparece nos dois; de 200 a 250 é inédita para a rede."},
+    {t:"mc", q:"Qual foi o resultado do exemplo?", o:["Acompanha bem no treino e generaliza razoavelmente no teste","Erra tudo no treino e acerta tudo no teste","Só funciona com a senoide pura","Diverge depois de 10 passos"], exp:"A saída acompanha bem a desejada no treino e generaliza razoavelmente no teste."}
+  ]}
+  ]
+},
+{ id:"net", tab:"Redes 2", label:"salto", tag:"Redes",
+  intro:"Redes 2 no Packet Tracer. Os cenários do laboratório, salto por salto: comandos, cabos, rotas e por que cada coisa está ali.",
+  cola:[
+    "<code>clock rate</code> vai na ponta <b>DCE</b> do cabo serial. Se der erro, a DCE está do outro lado.",
+    "Enlace ponto a ponto: <code>255.255.255.252</code> (/30), 2 hosts.",
+    "<code>ip route REDE MÁSCARA PRÓXIMO_SALTO</code>. Rota padrão: <code>ip route 0.0.0.0 0.0.0.0 …</code>.",
+    "Switch L3: <code>no switchport</code> (porta roteada) e <code>ip routing</code> (liga o roteamento).",
+    "Frame Relay: IP na subinterface <code>.201 point-to-point</code> com <code>frame-relay interface-dlci 201</code>.",
+    "RIP: <code>router rip</code> + <code>network</code> de cada rede conectada. Na tabela, <b>R</b> = RIP, <b>S</b> = estática, <b>C</b> = conectada.",
+    "Primeiro ping falhou? Pode ser o ARP. Repita."
+  ],
+  phases:[
+  { title:"Cenário 5B", sub:"DNS, Web, DHCP e rotas estáticas", qs:[
+    {t:"mc", q:"Qual cabo liga R1 Se2/0 a R2 Se2/0?", o:["Serial DCE, clicando primeiro no R1","Copper Straight-Through","Copper Cross-Over","Fibra"], exp:"Serial DCE, começando pelo R1. Assim a ponta DCE fica no R1, que é onde está o clock rate."},
+    {t:"mc", q:"Ao configurar a serial do R1, o comando <code>clock rate 64000</code> deu erro. O que aconteceu?", o:["A ponta DCE ficou no R2: tire o comando do R1 e coloque na Serial2/0 do R2","O IP da serial está errado","Falta o comando ip routing","O cabo precisa ser Straight-Through"], exp:"Só a ponta DCE fornece o clock. Se deu erro, a DCE está do outro lado: use no clock rate no R1 e aplique no R2."},
+    {t:"mc", q:"Que máscara o enlace serial 10.0.0.0 entre R1 e R2 usa no 5B?", o:["255.255.255.252","255.0.0.0","255.255.0.0","255.255.255.0"], exp:"/30: sobram exatamente 2 IPs (10.0.0.1 e 10.0.0.2), um para cada roteador."},
+    {t:"mc", q:"Qual rota o R1 precisa para alcançar a LAN direita (172.19.0.0/16)?", o:["ip route 172.19.0.0 255.255.0.0 10.0.0.2","ip route 172.19.0.0 255.255.0.0 10.0.0.1","ip route 10.0.0.0 255.255.255.252 172.19.1.1","ip route 0.0.0.0 0.0.0.0 172.19.1.1"], exp:"Rede de destino, máscara e próximo salto. O próximo salto é o R2 do outro lado do enlace: 10.0.0.2."},
+    {t:"mc", q:"Quantas rotas estáticas o R2 recebe no 5B?", o:["3","1","2","4"], exp:"Três: 172.16.0.0 (WEB), 172.17.0.0 (DNS) e 192.168.5.0 (LAN esquerda), todas via 10.0.0.1."},
+    {t:"mc", q:"No servidor DNS, que tipo de registro liga <code>meusite.org.br</code> a 172.16.3.3?", o:["A Record","CNAME","MX","NS"], exp:"A Record associa um nome a um endereço IPv4."},
+    {t:"mc", q:"Qual endereço de DNS é configurado em todos os servidores e pools?", o:["172.17.50.50","172.16.3.3","192.168.5.1","10.0.0.1"], exp:"172.17.50.50 é o servidor DNS, que fica na rede 172.17.0.0 ligada à Fa1/0 do R1."},
+    {t:"mc", q:"Qual comando mostra, de uma vez, se as interfaces estão up/up?", o:["show ip interface brief","show running-config dhcp","ipconfig /all","show vlan"], exp:"show ip interface brief lista cada interface com IP, status e protocolo."},
+    {t:"mc", q:"Para que serve o <code>no ip domain-lookup</code>?", o:["Evita que o roteador tente resolver um comando digitado errado como nome de host, travando o terminal","Desliga o servidor DNS da rede","Bloqueia pings por nome","Apaga as rotas estáticas"], exp:"Sem ele, uma palavra digitada errado vira uma consulta DNS e o terminal fica parado esperando resposta."},
+    {t:"vf", q:"Se o primeiro ping falhar, pode ser por causa do ARP; vale repetir antes de concluir que há erro.", a:true, exp:"Verdadeiro. Os primeiros pacotes podem se perder enquanto o ARP descobre o endereço MAC."},
+    {gen:"dhcp"}
+  ]},
+  { title:"Cenário 6", sub:"Switch L3 (3650-24PS)", qs:[
+    {t:"mc", q:"A 3650 foi colocada no cenário e não liga. O que falta?", o:["Arrastar a fonte AC Power Supply para os 2 slots na aba Physical","Rodar ip routing","Trocar o cabo por Cross-Over","Configurar a VLAN 1"], exp:"A 3650 vem sem fonte no Packet Tracer. Sem a AC Power Supply nos slots, ela não liga."},
+    {t:"mc", q:"O que faz <code>no switchport</code> numa porta da switch L3?", o:["Transforma a porta em porta roteada, que aceita IP","Desliga a porta","Coloca a porta na VLAN 1","Ativa o DHCP na porta"], exp:"Uma porta de switch comum não aceita ip address. Com no switchport ela vira porta roteada, como a de um roteador."},
+    {t:"mc", q:"E o comando <code>ip routing</code> na switch L3?", o:["Liga o roteamento na switch","Cria uma rota padrão","Habilita o RIP","Mostra a tabela de rotas"], exp:"Sem ip routing a switch não encaminha pacotes entre as redes das portas roteadas."},
+    {t:"mc", q:"O Router1 tem <code>ip route 0.0.0.0 0.0.0.0 172.21.0.1</code>. Que rota é essa?", o:["Rota padrão: tudo o que não é rede local sai pela switch L3","Rota para a rede 172.21.0.0","Rota de loopback","Rota que bloqueia todo o tráfego"], exp:"0.0.0.0 0.0.0.0 casa com qualquer destino, então é a rota padrão. O próximo salto é a switch L3, 172.21.0.1."},
+    {t:"mc", q:"O Router2 está sem as rotas para 192.168.0.0 e 172.21.0.0. O que acontece no ping do PC1 para o PC99?", o:["O ping chega no PC99, mas a resposta não volta","Funciona normal","O PC1 nem consegue sair da própria rede","A switch L3 desliga"], exp:"A ida usa as rotas de Router1 e da switch L3. Na volta, o Router2 não sabe chegar a 192.168.0.0, então a resposta se perde."},
+    {t:"mc", q:"Qual é o gateway dos PCs da rede corporativa (PC0 e PC1)?", o:["192.168.0.7","192.168.0.1","172.21.0.1","192.168.10.1"], exp:"192.168.0.7, a Gi0/0 do Router1."},
+    {t:"ord", q:"Monte a saída do <code>tracert 192.168.10.10</code> feito no PC1, na ordem dos saltos.", items:["192.168.0.7 (Router1)","172.21.0.1 (switch L3)","10.0.0.2 (Router2)","192.168.10.10 (PC99)"], exp:"PC1 → gateway Router1 → switch L3 → Router2 → PC99."}
+  ]},
+  { title:"Cenário 6B", sub:"Frame Relay e Internet simulada", qs:[
+    {t:"mc", q:"Por que o enlace switch L3–Router_2 muda de 10.0.0.0/8 para 30.0.0.0/30 no 6B?", o:["A rede 10.0.0.0/8 “engoliria” as redes 10.10.201.0/24 e 10.1.1.0/30 do provedor, e as rotas ficariam erradas","Porque /8 não funciona em portas Gigabit","Para economizar cabos","Porque o Frame Relay só aceita a rede 30"], exp:"10.0.0.0/8 contém todo endereço 10.x.x.x, inclusive as redes do provedor. Trocando para 30.0.0.0/30, não há sobreposição."},
+    {t:"mc", q:"Qual DLCI é usado nas duas portas da Cloud?", o:["201","100","16","1"], exp:"DLCI 201 na Serial3 (nome R2) e na Serial0 (nome R3)."},
+    {t:"mc", q:"DLCIs cadastrados, mas nada funciona. Que passo da Cloud costuma faltar?", o:["Connections > Frame Relay, ligando Serial3/R2 a Serial0/R3","Ligar o HTTP","Trocar o LMI para ANSI","Configurar DHCP"], exp:"Sem a ligação em Connections > Frame Relay o circuito (PVC) não existe."},
+    {t:"mc", q:"Na Serial0/3/0 física do Router_2 vai <code>no ip address</code> e <code>encapsulation frame-relay</code>. Onde fica o IP 10.10.201.2?", o:["Na subinterface Serial0/3/0.201 point-to-point, com frame-relay interface-dlci 201","Na própria Serial0/3/0","Na Gi0/0","Na Cloud"], exp:"A física só recebe o encapsulamento. O IP e o DLCI ficam na subinterface ponto a ponto."},
+    {t:"mc", q:"Quantas rotas estáticas o Router_4 tem?", o:["Uma: a rota padrão para 10.1.1.1","Cinco, uma para cada rede","Nenhuma","Duas"], exp:"O Router_4 é uma ponta: tudo o que não é local vai para o ISP. Basta ip route 0.0.0.0 0.0.0.0 10.1.1.1."},
+    {t:"mc", q:"O PVC aparece como INACTIVE ou DELETED. O que conferir?", o:["Os DLCIs nas duas portas da Cloud e a linha em Connections > Frame Relay","O cabo Straight-Through do Server0","O ip routing da switch L3","O index.html do servidor"], exp:"PVC inativo quase sempre é DLCI diferente ou ligação faltando na Cloud."},
+    {t:"mc", q:"Qual comando mostra o estado do circuito Frame Relay?", o:["show frame-relay pvc","show ip dhcp binding","show vlan brief","show cdp neighbors"], exp:"show frame-relay pvc mostra o estado (ACTIVE, INACTIVE, DELETED). show frame-relay map mostra o mapeamento."},
+    {t:"mc", q:"Como descobrir qual ponta do cabo serial é a DCE?", o:["show controllers serial 0/3/1","show ip route","ping","show version"], exp:"show controllers serial indica se aquela ponta é DCE ou DTE."},
+    {t:"mc", q:"Como encaixar o módulo HWIC-2T no roteador?", o:["Na aba Physical: desligar o roteador, encaixar o módulo e ligar de novo","Com o comando install hwic","Arrastando com o roteador ligado","Não precisa: o 2911 já vem com serial"], exp:"Com o roteador ligado, o Packet Tracer não deixa encaixar. Desliga, encaixa, liga."},
+    {t:"vf", q:"Os testes devem ir do trecho mais perto para o mais longe.", a:true, exp:"Verdadeiro. Assim, quando um ping falha, você sabe exatamente em qual trecho está o problema."}
+  ]},
+  { title:"Cenário 7", sub:"RIP com 3 roteadores", qs:[
+    {t:"mc", q:"Na saída do <code>show ip route</code>, qual letra marca as rotas aprendidas pelo RIP?", o:["R","S","C","O"], exp:"R = RIP. S = estática, C = diretamente conectada, O = OSPF."},
+    {t:"mc", q:"Quais comandos network vão no <code>router rip</code> do Router1?", o:["network 172.18.0.0, network 10.0.0.0 e network 20.0.0.0","network 192.168.0.0 e network 172.16.0.0","Só network 0.0.0.0","network 172.18.50.254"], exp:"Uma linha para cada rede ligada ao Router1: a LAN 172.18.0.0 e os dois enlaces seriais 10.0.0.0 e 20.0.0.0."},
+    {t:"mc", q:"E no Router2?", o:["network 10.0.0.0 e network 192.168.0.0","network 20.0.0.0 e network 172.16.0.0","network 172.18.0.0","network 10.0.0.0, 20.0.0.0 e 172.16.0.0"], exp:"O Router2 está ligado ao enlace 10.0.0.0 e à LAN 192.168.0.0."},
+    {t:"vf", q:"No RIP, a máscara de sub-rede vai junto do comando network.", a:false, exp:"Falso. No RIP o comando network recebe só o endereço da rede (classful), sem máscara."},
+    {t:"mc", q:"Por que esperar uns 30 segundos antes de olhar o <code>show ip route</code>?", o:["O RIP troca atualizações periodicamente (a cada 30 s), e as rotas levam um tempo para aparecer","Para o roteador reiniciar","Porque o clock rate demora","Para o DHCP distribuir IPs"], exp:"Os roteadores RIP anunciam suas tabelas a cada 30 s. Depois de algumas trocas, as 5 redes aparecem."},
+    {t:"mc", q:"Quantas redes cada roteador deve ver na tabela depois que o RIP convergir?", o:["5","3","2","8"], exp:"172.18.0.0, 10.0.0.0, 20.0.0.0, 192.168.0.0 e 172.16.0.0."},
+    {t:"mc", q:"Na Simulação, quais filtros deixar marcados em Edit Filters > IPv4?", o:["RIP e ICMP","Só HTTP","DNS e DHCP","Todos"], exp:"RIP para ver as atualizações de rota e ICMP para ver os pings e o tracert."},
+    {t:"mc", q:"Na variante sem RIP, qual comando remove o protocolo de cada roteador?", o:["no router rip","router rip shutdown","clear ip route *","no network"], exp:"Dentro do configure terminal, no router rip apaga toda a configuração do RIP."},
+    {t:"mc", q:"Na variante com rotas estáticas, quantas rotas vão em cada roteador?", o:["4 no Router1, 6 no Router2 e 4 no Router3","2 em cada","5 em cada","1 rota padrão em cada"], exp:"Cada rede remota fica com dois caminhos. Na tabela, essas rotas aparecem com a letra S."},
+    {t:"mc", q:"O que faz <code>ping -n 30 172.18.50.50</code>?", o:["Envia 30 pacotes de eco para 172.18.50.50","Espera 30 segundos e envia um ping","Faz ping em 30 hosts","Usa TTL 30"], exp:"No prompt do Windows/Packet Tracer, -n define quantos echo requests enviar."}
+  ]},
+  { title:"Sub-redes na ponta do lápis", sub:"Hosts, rede, broadcast e pool DHCP", qs:[
+    {gen:"hosts"},{gen:"hosts"},{gen:"netAddr"},{gen:"netAddr"},{gen:"dhcp"}
+  ]}
+  ]
+}
+];
+
+/* ---------- aulas (explicação antes de cada fase) ---------- */
+const LESSONS = {
+"rnn:0": `
+<p>Um MLP comum é <b>estático</b>: a mesma entrada sempre gera a mesma saída, e ele não lembra de nada. Uma <b>rede recorrente</b> é um MLP com <b>realimentação</b>: parte do que a rede produziu volta como entrada no instante seguinte. Assim a saída de hoje depende do que aconteceu antes, e a rede responde ao sinal <b>ao longo do tempo</b> (por isso “dirigida dinamicamente”).</p>
+<p>A realimentação cria um <b>estado</b>, um resumo do passado. Com ele, a rede não precisa receber uma janela enorme de entradas antigas, o que reduz a exigência de memória.</p>
+<h3>As quatro arquiteturas</h3>
+<ul>
+<li><b>NARX</b> (modelo recorrente de entrada-saída): MLP que recebe as entradas externas u(n) e as <b>saídas passadas</b> y(n), y(n−1)…, guardadas numa <b>linha de atraso na saída</b>.</li>
+<li><b>Espaço de estados</b>: descreve o sistema por um estado x(n). Útil quando se conhece a estrutura do sistema.<span class="f">x(n+1) = A·x(n) + B·u(n)
+y(n)   = C·x(n)</span></li>
+<li><b>Rede de Elman</b> (rede recorrente simples): realimenta o <b>estado interno</b>, ou seja, a saída da camada oculta. Não tem banco de atrasos na saída.<span class="f">x(n+1) = F(x(n), u(n))
+y(n)   = G(x(n))        F e G não-lineares</span></li>
+<li><b>RMLP</b> (perceptron multicamadas recorrente): cada camada computacional tem a <b>sua própria</b> realimentação.</li>
+</ul>
+<p class="key">Para não confundir: <b>NARX realimenta a saída</b>. <b>Elman realimenta o estado</b>.</p>`,
+
+"rnn:1": `
+<h3>A fórmula do NARX</h3>
+<p>A próxima saída depende das q saídas anteriores e das q entradas anteriores:</p>
+<span class="f">y(n+1) = F( y(n), …, y(n−q+1),  u(n), …, u(n−q+1) )</span>
+<p>Exemplo com q = 2: para prever y(5), a rede recebe y(4), y(3), u(4) e u(3).</p>
+<h3>Duas formas de alimentar o y passado</h3>
+<ul>
+<li><b>NARX para regressão</b> (aprendizado por imposição do professor): entram as <b>saídas reais medidas</b> do sistema. Não há realimentação de erro, então durante o treino a rede funciona como <b>não-recorrente</b>, um MLP comum com entradas atrasadas.</li>
+<li><b>Modelo NOE</b> (Nonlinear Output Error): entram as <b>predições da própria rede</b>. Se ela errar, o erro volta para dentro dela. Esta é uma rede recorrente “pura”.</li>
+</ul>
+<p class="key">Imposição do professor = saída real. NOE = saída prevista.</p>
+<h3>Espaço de estados linear e não-linear</h3>
+<p>No linear, as matrizes A, B e C fazem tudo. No não-linear, uma função F(·) toma o lugar de A e B: x(n+1) = F(x(n), u(n)).</p>
+<p>Exemplo escalar: com x(n+1) = 0,5·x(n) + 1·u(n), y = 2·x, x(0) = 0 e u(0) = 1, temos x(1) = 0,5·0 + 1·1 = 1 e y(1) = 2·1 = 2.</p>
+<h3>Equivalência</h3>
+<p>Se a rede recorrente é <b>observável</b> (dá para deduzir o estado olhando entradas e saídas), o modelo NARX consegue <b>simular</b> o modelo de espaço de estados.</p>`,
+
+"rnn:2": `
+<h3>Ponto de partida: redes estáticas</h3>
+<p>Uma rede estática pode ser treinada em modo <b>por lote</b> (ajusta os pesos depois de ver todos os exemplos) ou <b>sequencial</b> (ajusta a cada exemplo).</p>
+<h3>Redes recorrentes têm estado, então surgem dois modos</h3>
+<ul>
+<li><b>Treinamento por época</b>: a rede parte de um <b>estado inicial</b> e, a cada nova época, é <b>reinicializada</b> para ele. Combina com sequências de tamanho conhecido.</li>
+<li><b>Treinamento contínuo</b>: <b>não há reinicialização</b>. A rede aprende enquanto processa o sinal. Combina com sinais que nunca param, como um sensor online.</li>
+</ul>
+<h3>Algoritmos</h3>
+<ul>
+<li><b>BPTT</b> (Backpropagation Through Time): o principal. Desdobra a rede no tempo e aplica o backpropagation (próxima fase).</li>
+<li><b>ARTR</b>: usa uma <b>estimativa instantânea do gradiente</b>, atualizando a cada passo.</li>
+</ul>
+<p class="key">Época reinicia o estado. Contínuo nunca reinicia.</p>`,
+
+"rnn:3": `
+<h3>1. Desdobrar a rede no tempo</h3>
+<p>A ideia do BPTT é transformar a rede recorrente numa rede em camadas: cada instante de tempo vira uma camada. Com o intervalo de n₀ = 0 a n₁ = 3, a rede vira 3 camadas empilhadas. Todas são <b>cópias da mesma rede</b>, então os pesos são <b>compartilhados</b>.</p>
+<h3>2. Custo da época</h3>
+<span class="f">E_total = ½ · Σ (n = n₀ … n₁) Σⱼ eⱼ²(n)</span>
+<p>Soma o erro quadrático de todos os neurônios em todos os instantes do intervalo.</p>
+<h3>3. Passo para frente</h3>
+<p>Propaga o padrão temporal completo de n₀ até n₁, guardando entradas, estados e erros de cada instante.</p>
+<h3>4. Passo para trás: gradientes locais de n₁ até n₀</h3>
+<p>Começa pelo fim, porque o δ de um instante depende do δ do instante seguinte.</p>
+<span class="f">Em n = n₁:
+δⱼ(n) = φ'(vⱼ(n)) · eⱼ(n)
+
+Para n₀ &lt; n &lt; n₁:
+δⱼ(n) = φ'(vⱼ(n)) · [ eⱼ(n) + Σₖ wⱼₖ δₖ(n+1) ]</span>
+<p>Leia o colchete como <b>erro atual + erro que vem do futuro</b>. Esse termo do futuro é o que diferencia o BPTT do backpropagation padrão. Em n₁ não há futuro dentro do intervalo, então só entra o erro atual.</p>
+<h3>5. Ajuste dos pesos</h3>
+<span class="f">Δwⱼᵢ = η · Σ (n = n₀+1 … n₁) δⱼ(n) · xᵢ(n−1)</span>
+<p>Como o peso é o mesmo em todas as camadas desdobradas, somam-se as contribuições de todos os instantes. Repare no <b>n−1</b>: o δ do instante n multiplica a entrada do instante anterior.</p>`,
+
+"rnn:4": `
+<p>Nesta fase os números mudam a cada partida. Siga sempre a mesma receita.</p>
+<h3>Receita</h3>
+<ol>
+<li><b>Derivada φ'</b>. Logística: φ' = y·(1 − y). Tangente hiperbólica: φ' = 1 − y².</li>
+<li><b>Erro</b>: e = d − y (desejado menos obtido).</li>
+<li><b>Último instante (n₁)</b>: δ = φ' · e.</li>
+<li><b>Instantes anteriores</b>: δ(n) = φ' · [ e(n) + Σ w·δ(n+1) ].</li>
+<li><b>Peso</b>: Δw = η · Σ δ(n) · x(n−1).</li>
+</ol>
+<h3>Exemplo resolvido</h3>
+<p>Neurônio auto-realimentado com w = 0,5, de n₀ = 0 a n₁ = 2. Em n = 2: φ' = 0,2 e e = 0,4. Em n = 1: φ' = 0,25 e e = −0,1.</p>
+<span class="f">δ(2) = 0,2 · 0,4                 = 0,08
+δ(1) = 0,25 · [ −0,1 + 0,5·0,08 ]
+     = 0,25 · [ −0,1 + 0,04 ]
+     = 0,25 · (−0,06)          = −0,015</span>
+<p>Agora o ajuste, com η = 0,1, x(0) = 1 e x(1) = 2:</p>
+<span class="f">Δw = 0,1 · [ δ(1)·x(0) + δ(2)·x(1) ]
+   = 0,1 · [ −0,015·1 + 0,08·2 ]
+   = 0,1 · 0,145 = 0,0145</span>
+<p class="key">Cuidado com sinais negativos e com o n−1 na entrada. Pode usar vírgula ou ponto nas respostas.</p>`,
+
+"rnn:5": `
+<h3>Elman, “Finding Structure in Time” (1990)</h3>
+<p>Elman mostrou que a rede com realimentação do estado consegue descobrir padrões no tempo.</p>
+<ul>
+<li><b>XOR sequencial</b>: os bits chegam um por vez e o terceiro é o XOR dos dois anteriores. Para prever, a rede precisa lembrar do passado.</li>
+<li><b>Predição de letras</b>: cada consoante é seguida por vogais definidas. A consoante aparece sem padrão, então o erro continua alto nela. Já a vogal é previsível depois da consoante, então o erro <b>cai nas vogais</b> (a, i, u).</li>
+</ul>
+<h3>Previsão de série temporal</h3>
+<p>A rede de Elman recebe x(n) e o seu estado atual e aprende a prever <b>x(n+1)</b>, um passo à frente.</p>
+<span class="f">x(n) = sen( n + sen(n²) )      sinal de frequência modulada</span>
+<ul>
+<li>Treino: 200 instantes. Teste: 100 instantes, de 150 a 250, então 50 se sobrepõem ao treino.</li>
+<li>Configuração: <b>GDX</b>, <b>1000 passos</b>, <b>10 unidades ocultas</b>.</li>
+<li>Resultado: acompanha bem a saída desejada no treino e generaliza razoavelmente no teste.</li>
+</ul>`,
+
+"net:0": `
+<p>Duas LANs ligadas por dois roteadores (R1 e R2) num enlace serial, com servidores WEB, DNS e DHCP.</p>
+<h3>Enlace serial</h3>
+<ul>
+<li>Cabo <b>Serial DCE</b>, clicando primeiro no R1. A ponta DCE gera o relógio, então o <code>clock rate 64000</code> vai no R1.</li>
+<li>Se o <code>clock rate</code> der erro, a DCE ficou no R2: tire do R1 (<code>no clock rate</code>) e coloque no R2.</li>
+<li>Máscara <code>255.255.255.252</code> (/30): só 2 IPs úteis, 10.0.0.1 (R1) e 10.0.0.2 (R2).</li>
+</ul>
+<h3>Rotas estáticas</h3>
+<p>Formato: <code>ip route REDE MÁSCARA PRÓXIMO_SALTO</code>. Cada roteador precisa de uma rota para cada rede que <b>não</b> está ligada nele.</p>
+<span class="f">R1: ip route 172.19.0.0 255.255.0.0 10.0.0.2
+R2: ip route 172.16.0.0  255.255.0.0   10.0.0.1   (WEB)
+    ip route 172.17.0.0  255.255.0.0   10.0.0.1   (DNS)
+    ip route 192.168.5.0 255.255.255.0 10.0.0.1   (LAN esquerda)</span>
+<h3>Serviços</h3>
+<ul>
+<li><b>DNS</b> em 172.17.50.50, com um <b>A Record</b>: meusite.org.br → 172.16.3.3 (o WEB).</li>
+<li><b>DHCP</b>: o pool entrega IPs a partir do Start IP. Último IP = início + (Max Users − 1). LAN esquerda: 192.168.5.100 a .109. LAN direita: 172.19.200.200 a .249.</li>
+<li><code>no ip domain-lookup</code> evita que um comando digitado errado vire consulta DNS e trave o terminal.</li>
+</ul>
+<h3>Testes</h3>
+<p><code>show ip interface brief</code> (interfaces up/up), <code>show ip route</code>, <code>ipconfig /all</code> e pings do mais perto para o mais longe. O primeiro ping pode falhar por causa do <b>ARP</b>: repita.</p>`,
+
+"net:1": `
+<p>Uma switch multicamada (L3, 3650-24PS) faz papel de roteador entre o Router1 (rede corporativa) e o Router2 (datacenter).</p>
+<h3>Antes de tudo</h3>
+<p>A 3650 vem sem fonte. Na aba <b>Physical</b>, arraste a <b>AC Power Supply</b> para os 2 slots, senão ela não liga.</p>
+<h3>Os dois comandos da switch L3</h3>
+<ul>
+<li><code>no switchport</code>: transforma a porta em <b>porta roteada</b>, que aceita <code>ip address</code>.</li>
+<li><code>ip routing</code>: <b>liga o roteamento</b> na switch.</li>
+</ul>
+<h3>Rota padrão</h3>
+<span class="f">Router1: ip route 0.0.0.0 0.0.0.0 172.21.0.1</span>
+<p><code>0.0.0.0 0.0.0.0</code> casa com qualquer destino: tudo o que não é rede local do Router1 vai para a switch L3.</p>
+<h3>A rota de volta</h3>
+<p>O Router2 precisa de rotas para 192.168.0.0 e 172.21.0.0 via 10.0.0.1. Sem elas, o ping <b>chega</b> ao PC99, mas a <b>resposta não volta</b>.</p>
+<h3>Caminho do tracert do PC1 para o PC99</h3>
+<span class="f">192.168.0.7 → 172.21.0.1 → 10.0.0.2 → 192.168.10.10
+(Router1)     (switch L3)  (Router2)   (PC99)</span>`,
+
+"net:2": `
+<p>O Cenário 6 ganha uma WAN Frame Relay (a Cloud) e um provedor (Router_3-ISP) que leva até o Router_4 e o Server0.</p>
+<h3>Por que mudar o enlace para 30.0.0.0/30</h3>
+<p>A rede 10.0.0.0/8 contém <b>todo</b> endereço 10.x.x.x. Ela “engoliria” as redes do provedor 10.10.201.0/24 e 10.1.1.0/30, e as rotas ficariam erradas. Com 30.0.0.0/30 não há sobreposição.</p>
+<h3>Módulos seriais</h3>
+<p>HWIC-2T na aba Physical: <b>desliga</b> o roteador, encaixa o módulo, <b>liga</b> de novo.</p>
+<h3>Cloud (Frame Relay)</h3>
+<ol>
+<li>Serial3: DLCI <b>201</b>, nome R2. Serial0: DLCI <b>201</b>, nome R3.</li>
+<li><b>Connections &gt; Frame Relay</b>: liga Serial3/R2 a Serial0/R3. Sem isso o circuito (PVC) não existe.</li>
+</ol>
+<h3>Interface física × subinterface</h3>
+<span class="f">interface Serial0/3/0
+ no ip address
+ encapsulation frame-relay
+interface Serial0/3/0.201 point-to-point
+ ip address 10.10.201.2 255.255.255.0
+ frame-relay interface-dlci 201</span>
+<p>A física só recebe o encapsulamento. O IP e o DLCI ficam na <b>subinterface ponto a ponto</b>.</p>
+<h3>Router_4 e testes</h3>
+<p>O Router_4 é uma ponta: basta a rota padrão <code>ip route 0.0.0.0 0.0.0.0 10.1.1.1</code>. Teste do trecho mais perto para o mais longe. Para o PVC use <code>show frame-relay pvc</code>; se aparecer INACTIVE ou DELETED, confira os DLCIs e a ligação na Cloud. Para saber qual ponta é DCE: <code>show controllers serial 0/3/1</code>.</p>`,
+
+"net:3": `
+<p>Em vez de digitar rotas à mão, os roteadores usam o <b>RIP</b> para anunciar as redes que conhecem e aprender as dos vizinhos.</p>
+<h3>Configuração</h3>
+<p>Dentro de <code>router rip</code>, uma linha <code>network</code> para cada rede <b>diretamente ligada</b> ao roteador, só o endereço, <b>sem máscara</b>.</p>
+<span class="f">Router1: network 172.18.0.0 / 10.0.0.0 / 20.0.0.0
+Router2: network 10.0.0.0 / 192.168.0.0
+Router3: network 192.168.0.0 / 172.16.0.0 / 20.0.0.0</span>
+<h3>Conferindo</h3>
+<p>O RIP troca atualizações a cada 30 s, então espere um pouco e rode <code>show ip route</code>. Cada roteador deve ver as <b>5 redes</b>.</p>
+<span class="f">C = diretamente conectada   R = aprendida pelo RIP   S = estática</span>
+<p>Na Simulação, em Edit Filters &gt; IPv4, deixe só <b>RIP</b> e <b>ICMP</b>. <code>ping -n 30</code> envia 30 pacotes.</p>
+<h3>Variante sem RIP</h3>
+<p><code>no router rip</code> em cada roteador e depois rotas estáticas: 4 no Router1, 6 no Router2 e 4 no Router3. Cada rede remota fica com dois caminhos, e aparecem com a letra <b>S</b>.</p>`,
+
+"net:4": `
+<h3>Hosts utilizáveis</h3>
+<span class="f">bits de host = 32 − prefixo
+hosts úteis  = 2^(bits de host) − 2</span>
+<p>Tira-se 2 porque o endereço de rede e o de broadcast não vão para hosts.</p>
+<span class="f">/30  255.255.255.252   2 bits  →  2 hosts
+/24  255.255.255.0     8 bits  →  254 hosts
+/16  255.255.0.0      16 bits  →  65.534 hosts
+/8   255.0.0.0        24 bits  →  16.777.214 hosts</span>
+<h3>Endereço de rede e broadcast</h3>
+<p>Onde a máscara é 255, copia o número do IP. Onde é 0, a rede leva 0 e o broadcast leva 255.</p>
+<span class="f">172.19.200.215 / 255.255.0.0
+rede      172.19.0.0
+broadcast 172.19.255.255</span>
+<p>No /30, os blocos andam de 4 em 4: 10.0.0.1 está no bloco 10.0.0.0 a 10.0.0.3, então a rede é 10.0.0.0 e o broadcast 10.0.0.3.</p>
+<h3>Faixa do DHCP</h3>
+<span class="f">último IP = Start IP + (Max Users − 1)
+192.168.5.100 com 10 usuários → 192.168.5.109</span>`
+};
+
+
+/* ---------- geradores: CineSugere ---------- */
+G.statusCode = () => {
+  const c = pick([
+    ["POST /api/avaliacoes com nota 11", "400 Bad Request", "A regra da nota (0 a 10) está no AvaliacaoService, que lança ValidacaoException. O ApiServlet transforma em 400."],
+    ["POST /api/filmes com \"titulo\": \"\"", "400 Bad Request", "Título vazio: o FilmeService.validar lança ValidacaoException(\"O título é obrigatório.\"), que vira 400."],
+    ["POST /api/filmes com JSON quebrado (faltando uma chave)", "400 Bad Request", "JsonParseException cai no mesmo catch da ValidacaoException e vira 400 com \"JSON inválido.\""],
+    ["GET /api/filmes/999 (filme que não existe)", "404 Not Found", "O DAO devolve Optional vazio, o Service lança RecursoNaoEncontradoException e isso vira 404."],
+    ["POST /api/categorias com nome \"ação\" quando já existe \"Ação\"", "409 Conflict", "O CategoriaService compara com LOWER(nome) e lança ConflitoException: vira 409."],
+    ["DELETE /api/filmes/3 sendo que o filme 3 tem avaliações", "409 Conflict", "FilmeService.excluir conta as avaliações e lança ConflitoException pedindo para apagá-las antes."],
+    ["DELETE /api/filmes/3 de um filme sem avaliações", "204 No Content", "Deu certo e não há nada para devolver no corpo, então o controller chama semConteudo."],
+    ["POST /api/filmes com { \"titulo\": \"Duna\", \"anoLancamento\": 2021 }", "201 Created", "Criou um recurso: o método criado responde 201 e coloca o cabeçalho Location com o endereço novo."],
+    ["GET /api/categorias/5/sugestoes", "200 OK", "Buscar ou listar que deu certo responde 200, com o ranking em JSON."],
+    ["PUT /api/filmes/6 com dados válidos", "200 OK", "Atualizar com sucesso responde 200 com o filme atualizado."],
+    ["DELETE /api/filmes (sem id)", "405 Method Not Allowed", "Sem id o controller chama super.delete, que lança MetodoNaoPermitidoException: vira 405."],
+    ["GET /api/filmes com o MySQL fora do ar", "500 Internal Server Error", "Erro inesperado cai no catch(Exception): registra no log e responde 500 \"Erro interno no servidor.\""],
+    ["GET /api/filmes/abc", "400 Bad Request", "O método id() tenta Integer.parseInt; \"abc\" ou \"-1\" geram ValidacaoException(\"Id inválido\"), que vira 400."]
+  ]);
+  const all = ["200 OK","201 Created","204 No Content","400 Bad Request","404 Not Found","405 Method Not Allowed","409 Conflict","500 Internal Server Error"];
+  const wrong = shuffle(all.filter(x=>x!==c[1])).slice(0,3);
+  return { t:"mc", q:`Que código de status a API do CineSugere devolve para: <code>${c[0]}</code>?`, o:[c[1], ...wrong], exp:c[2] };
+};
+G.ranking = () => {
+  const filmes = shuffle(["Matrix","Interestelar","Duna","Toy Story","Coringa","Up","Parasita","Alien"]).slice(0,3);
+  const cat = pick(["Ficção Científica","Animação","Drama","Suspense"]);
+  const notas = filmes.map(()=>{ const n = 2 + Math.floor(Math.random()*3); return Array.from({length:n},()=>4+Math.floor(Math.random()*7)); });
+  const medias = notas.map(ns=>ns.reduce((a,b)=>a+b,0)/ns.length);
+  const ord = filmes.map((f,i)=>({f, m:medias[i]})).sort((a,b)=>b.m-a.m || a.f.localeCompare(b.f));
+  const top = ord[0];
+  return { t:"num",
+    q:`Avaliações na categoria <b>${cat}</b>:<span class="f">${filmes.map((f,i)=>`${f}: ${notas[i].join(", ")}`).join("\n")}</span>O endpoint <code>GET /api/categorias/{id}/sugestoes</code> faz <code>AVG(nota)</code> por filme e ordena da maior média para a menor. Qual é a <b>média do 1º colocado</b>?`,
+    fields:[{label:"média do 1º =", ans:top.m}],
+    hint:"Para cada filme, some as notas e divida pela quantidade. O 1º é o de maior média.",
+    exp:`<span class="f">${ord.map((o,k)=>`${k+1}. ${o.f}: média ${fmt(o.m)}`).join("\n")}</span>É o que o SQL faz: JOIN filmes com avaliacoes, WHERE categoria_id = ?, GROUP BY filme, AVG(nota) AS media, ORDER BY media DESC, titulo.` };
+};
+
+const CINE_TRACK = { id:"cine", tab:"CineSugere", label:"parte", tag:"T2",
+  intro:"O projeto de Aplicações para Internet (T2): API RESTful + site em Java MVC. Da ideia geral até as perguntas que o professor pode fazer na apresentação.",
+  cola:[
+    "Em uma frase: o usuário cadastra filmes e categorias, dá notas de 0 a 10 e o sistema sugere os melhores de cada categoria pela <b>média</b>.",
+    "Dois projetos: <code>api/</code> (JSON + banco) e <code>web/</code> (telas que chamam a API). O site <b>nunca</b> acessa o banco.",
+    "Camadas: Controller (garçom, HTTP) → Service (cozinheiro, regras) → DAO (estoquista, SQL) → MySQL.",
+    "Erros: ValidacaoException 400, RecursoNaoEncontradoException 404, ConflitoException 409, qualquer outra 500.",
+    "Regras: título até 150 e ano entre 1888 e ano atual + 5; categoria até 100 e sem repetir; nota de 0 a 10.",
+    "Segurança: <code>PreparedStatement</code> contra SQL Injection e <code>&lt;c:out&gt;</code> contra XSS.",
+    "Documentação: Swagger em <code>/api/docs/</code>, Postman em <code>api/docs/</code> e o README. Testes: JUnit no Service com H2."
+  ],
+  phases:[
+  { title:"Conceitos básicos", sub:"API, REST, CRUD, JSON, status, MVC", qs:[
+    {t:"mc", q:"Na analogia do restaurante, quem é a API?", o:["O garçom: a porta de entrada que recebe o pedido e traz a resposta","A cozinha","O cliente","A despensa"], exp:"O cliente não entra na cozinha; faz o pedido ao garçom. A API é essa porta de entrada pela qual outros programas pedem coisas ao sistema."},
+    {t:"mc", q:"Em REST, o que diz <b>o que você quer fazer</b> com um recurso?", o:["O método HTTP (o verbo): GET, POST, PUT ou DELETE","O nome do arquivo .java","A porta 8080","O formato JSON"], exp:"Cada coisa tem um endereço (URL), e a ação é dita pelo verbo HTTP."},
+    {t:"mc", q:"<code>PUT /api/filmes/3</code> faz o quê, e qual é a letra do CRUD?", o:["Atualiza o filme 3 (Update)","Cria o filme 3 (Create)","Lê o filme 3 (Read)","Apaga o filme 3 (Delete)"], exp:"GET = Read, POST = Create, PUT = Update, DELETE = Delete."},
+    {t:"mc", q:"Qual a diferença entre POST e PUT?", o:["POST cria um recurso novo e o servidor escolhe o id; PUT atualiza um que já existe, com o id na URL","São iguais","POST apaga e PUT cria","PUT só funciona no Postman"], exp:"É uma das perguntas que o professor pode fazer."},
+    {t:"mc", q:"Como se escreve uma lista em JSON?", o:["Entre colchetes [ ... ]","Entre parênteses ( ... )","Entre aspas simples","Separada por ponto e vírgula, sem delimitador"], exp:"Objeto entre chaves { }, lista entre colchetes [ ]."},
+    {t:"mc", q:"Dica para lembrar dos códigos de status:", o:["2xx sucesso, 4xx culpa de quem pediu, 5xx culpa do servidor","2xx erro, 4xx sucesso, 5xx aviso","Todos os erros são 500","4xx é sempre falta de internet"], exp:"200, 201 e 204 são sucesso. 400, 404 e 409 são problema no pedido. 500 é erro do servidor."},
+    {t:"mc", q:"Por que o DELETE devolve 204 e não 200?", o:["Deu certo, mas não há nada para devolver no corpo: 204 é sucesso sem conteúdo","Porque falhou","Porque 200 é só para GET","Porque o Tomcat não aceita 200 em DELETE"], exp:"204 No Content significa exatamente sucesso sem corpo."},
+    {t:"mc", q:"No MVC, quem é o <b>V</b> no caso da API?", o:["O JSON que volta na resposta (no site, as telas JSP)","O banco MySQL","O Service","O pom.xml"], exp:"Model são os dados, View é o que a pessoa vê (JSP no site, JSON na API) e Controller recebe o pedido e decide o que fazer."},
+    {gen:"statusCode"}
+  ]},
+  { title:"Estrutura e camadas", sub:"api/ × web/, pastas, o caminho de um POST", qs:[
+    {t:"mc", q:"Por que a API e o site são projetos separados?", o:["Para a API não depender do site: amanhã um app de celular pode usar a mesma API sem mexer nela","Porque o Java não deixa juntar","Para usar dois bancos","Porque o Docker exige"], exp:"O site é só um cliente da API, como o Postman. Ele nunca acessa o banco direto."},
+    {t:"mc", q:"Qual camada aplica a regra \"a nota tem que ser de 0 a 10\"?", o:["Service (o cozinheiro)","Controller (o garçom)","DAO (o estoquista)","A JSP"], exp:"Regras de negócio ficam no Service. O Controller só lida com HTTP e o DAO só busca e guarda."},
+    {t:"mc", q:"O que o DAO faz?", o:["Fala SQL com o banco: inserir, listar, buscarPorId, atualizar, excluir","Valida as regras de negócio","Recebe o pedido HTTP","Desenha as telas"], exp:"DAO = Data Access Object. Se trocarem o MySQL, só os DAOs mudam; Service e Controller continuam iguais."},
+    {t:"mc", q:"A pasta <code>web/</code> não tem <code>dao/</code> nem <code>service/</code>. O que ela tem no lugar?", o:["client/: ApiClient, FilmeClient… que pedem tudo para a API por HTTP","Uma cópia do banco","Os mesmos DAOs da API","Nada: o site não busca dados"], exp:"O site não fala com o banco e não tem regras. Os clients fazem chamadas HTTP para a API."},
+    {t:"mc", q:"<code>main</code> em <code>src/main</code> é o quê?", o:["Só o nome de uma pasta (padrão Maven). Quem liga o sistema é o Tomcat","O método public static void main","Um servidor","O banco de dados"], exp:"Não existe método main no projeto. O Tomcat lê o api.war e chama as classes com @WebServlet, @WebListener e @WebFilter."},
+    {t:"mc", q:"Para que serve o <code>EncodingFilter</code>?", o:["Roda antes de todo pedido e garante UTF-8, para os acentos (\"Ação\") não virarem símbolos estranhos","Filtra filmes por nota","Bloqueia SQL Injection","Faz login"], exp:"Um filtro é uma classe que roda antes de todo pedido chegar ao controller."},
+    {t:"mc", q:"A pasta <code>target/</code>:", o:["É gerada pelo Maven ao compilar (classes .class e api.war) e não vai para o GitHub","Guarda os testes","Tem as telas JSP","Tem o init.sql"], exp:"Pode apagar sem medo: o mvn package cria de novo. Está no .gitignore."},
+    {t:"ord", q:"Ordene o caminho de <code>POST /api/filmes</code> com Duna (2021).", items:["FilmeApiController.post lê o JSON e monta um Filme (lerFilme)","FilmeService.criar valida: título e ano entre 1888 e ano atual + 5","FilmeDAO.inserir executa INSERT INTO filmes ... VALUES (?, ?)","A resposta volta: 201 Created, Location /api/filmes/6 e o filme em JSON"], exp:"Controller → Service → DAO → resposta. É o roteiro da parte \"camadas\" da apresentação."},
+    {t:"vf", q:"O site acessa o MySQL direto quando precisa de dados mais rápido.", a:false, exp:"Falso. O site nunca acessa o banco: ele sempre pede para a API."}
+  ]},
+  { title:"Regras, erros e endpoints", sub:"Service, exceções, rotas e sugestões", qs:[
+    {t:"mc", q:"Quais são as regras do <b>filme</b>?", o:["Título obrigatório com até 150 caracteres; ano entre 1888 e o ano atual + 5","Título com até 100 caracteres; ano livre","Título opcional; ano a partir de 1900","Título único; ano até o ano atual"], exp:"1888 é o primeiro filme da história. O ano máximo é Year.now() + 5."},
+    {t:"mc", q:"E a da <b>categoria</b>?", o:["Nome obrigatório com até 100 caracteres e sem repetir (\"Ação\" e \"ação\" contam como iguais)","Nome com até 150 caracteres, pode repetir","Nome numérico","Não tem regra"], exp:"O CategoriaService busca com LOWER(nome) = LOWER(?) e lança ConflitoException se já existir."},
+    {t:"mc", q:"Renomear \"Drama\" para \"Drama\" (ela mesma) dá conflito?", o:["Não: o idAtual faz a própria categoria não contar como repetida","Sim, sempre dá 409","Dá 404","Dá 500"], exp:"A condição é existente.get().getId() != idAtual."},
+    {t:"mc", q:"Quem transforma <code>ValidacaoException</code> em 400?", o:["O ApiServlet, a classe mãe dos controllers","O FilmeService","O FilmeDAO","O Tomcat sozinho"], exp:"O Service não sabe nada de HTTP: só lança exceções com nomes que dizem o problema. O ApiServlet traduz para o código."},
+    {t:"mc", q:"Qual é o formato da resposta de erro?", o:["{ \"status\": 400, \"erro\": \"O título é obrigatório.\" }","Uma página HTML de erro","Só o número 400, sem corpo","{ \"ok\": false }"], exp:"Sempre status e erro. O site lê o campo \"erro\" e mostra a mensagem em vermelho."},
+    {t:"mc", q:"Qual endpoint mostra o ranking de uma categoria?", o:["GET /api/categorias/{id}/sugestoes","GET /api/filmes/ranking","POST /api/sugestoes","GET /api/avaliacoes/{id}"], exp:"É a parte mais legal para mostrar na demonstração."},
+    {t:"mc", q:"Como filtrar avaliações de um filme?", o:["GET /api/avaliacoes?filmeId=1","GET /api/filmes/1/avaliacoes","POST /api/avaliacoes/filtrar","GET /api/avaliacoes/filme=1"], exp:"A listagem de avaliações aceita ?filmeId= e ?categoriaId=."},
+    {t:"mc", q:"O que o ApiServlet faz com <code>/5/sugestoes</code>?", o:["Quebra em partes: [\"5\", \"sugestoes\"]","Converte em JSON","Apaga a categoria 5","Redireciona para o Swagger"], exp:"Com o caminho em partes, o controller decide: 0 partes lista, 1 parte busca por id, 2 partes com \"sugestoes\" é o ranking."},
+    {t:"mc", q:"O que é CORS, liberado no ApiServlet?", o:["Permissão para uma página de outro endereço chamar a API pelo navegador","Um tipo de banco","Um código de status","Uma biblioteca de JSON"], exp:"O cabeçalho Access-Control-Allow-Origin: * libera. A index.jsp usa isso ao chamar a API com fetch."},
+    {gen:"statusCode"},{gen:"ranking"}
+  ]},
+  { title:"Banco e código da API", sub:"Tabelas, conexão, DAO, SQL das sugestões", qs:[
+    {t:"mc", q:"Quantas tabelas o banco tem, e qual é a \"ponte\" entre filme e categoria?", o:["3 tabelas; avaliacoes é a ponte (filme_id e categoria_id)","2 tabelas; não há ponte","4 tabelas; a ponte é filmes_categorias","3 tabelas; categorias é a ponte"], exp:"filmes, categorias e avaliacoes. Um mesmo filme pode ter notas em várias categorias."},
+    {t:"mc", q:"O que a FK (chave estrangeira) garante?", o:["Que não dá para criar uma avaliação de um filme que não existe","Que o id cresce sozinho","Que o título não se repete","Que a nota é de 0 a 10"], exp:"A FK liga a avaliação a um filme e a uma categoria existentes. O id que cresce sozinho é a PK com AUTO_INCREMENT."},
+    {t:"mc", q:"Como o PreparedStatement evita SQL Injection?", o:["O SQL usa ? no lugar dos valores; o valor digitado nunca é colado no comando","Criptografando o banco","Bloqueando a palavra DROP","Usando senha forte"], exp:"Se alguém digitar '); DROP TABLE filmes; -- no título, vira só um título estranho."},
+    {t:"mc", q:"Para que serve <code>RETURN_GENERATED_KEYS</code> no FilmeDAO.inserir?", o:["Pedir ao banco o id que ele acabou de criar","Gerar uma senha","Retornar todas as linhas da tabela","Criar a tabela"], exp:"O banco devolve o id novo (por exemplo, 6) e o Service usa para buscar e devolver o filme."},
+    {t:"mc", q:"Por que buscarPorId devolve um <code>Optional&lt;Filme&gt;</code>?", o:["É uma caixa que pode estar vazia; obriga a tratar o \"não encontrei\" em vez de receber null de surpresa","Para deixar mais rápido","Porque o Gson exige","Para guardar várias notas"], exp:"No Service, orElseThrow transforma a caixa vazia em RecursoNaoEncontradoException, que vira 404."},
+    {t:"ord", q:"Ordene a consulta das sugestões, do jeito que se lê o SQL.", items:["FROM filmes f JOIN avaliacoes a ON a.filme_id = f.id","WHERE a.categoria_id = ?","GROUP BY f.id, f.titulo, f.ano_lancamento","AVG(a.nota) AS media","ORDER BY media DESC, f.titulo"], exp:"Junta filme com avaliações, fica só com a categoria, agrupa por filme, calcula a média e ordena da maior para a menor (empate em ordem alfabética)."},
+    {t:"mc", q:"O que faz a ConnectionFactory?", o:["É a fábrica de conexões: todo DAO chama getConnection(), e endereço, usuário e senha vêm de variáveis de ambiente","Cria as tabelas","Converte JSON","Testa as regras"], exp:"jdbc:mysql://mysql:3306/mvc_java = MySQL na máquina \"mysql\" (o container), porta 3306, banco mvc_java. Com DB_MODE=h2 usa o banco de teste."},
+    {t:"mc", q:"Por que o DatabaseBootstrap tenta até 20 vezes?", o:["No Docker a API pode ligar antes do MySQL terminar de subir; ele espera 2 s entre tentativas","Para criar 20 tabelas","Para inserir 20 filmes","Porque o Tomcat pede"], exp:"Ele é um @WebListener: roda quando a API liga, cria as tabelas com CREATE TABLE IF NOT EXISTS e põe 5 filmes de exemplo se o banco estiver vazio."},
+    {t:"mc", q:"<code>try ( ... )</code> com parênteses, nos DAOs, é:", o:["try-with-resources: fecha a conexão sozinho no final, mesmo se der erro","Um laço de repetição","Uma transação","Um teste JUnit"], exp:"Evita deixar conexões abertas com o banco."},
+    {t:"mc", q:"Por que o campo <code>media</code> do Filme é <code>Double</code> (com D maiúsculo)?", o:["Pode ficar vazio (null): a média só existe nas sugestões, e aí o Gson nem coloca o campo no JSON","Porque é mais preciso que double","Porque o MySQL exige","Por engano"], exp:"Os campos são private com getters e setters: isso é encapsulamento."},
+    {gen:"ranking"}
+  ]},
+  { title:"Site, Docker e testes", sub:"ApiClient, JSP, docker-compose, JUnit", qs:[
+    {t:"mc", q:"Você digita nota 11 na tela. Onde a regra é conferida?", o:["Só na API: o site manda POST /api/avaliacoes, recebe 400 e mostra a mensagem em vermelho","No site, antes de enviar","No MySQL, por trigger","Na JSP"], exp:"O site não sabe a regra; só mostra o que a API disse. Isso prova que as camadas estão separadas de verdade."},
+    {t:"mc", q:"O que o ApiClient faz quando a API responde 400 ou mais?", o:["Lê o campo \"erro\" e lança uma ApiException com a mesma mensagem","Tenta de novo até dar certo","Ignora e mostra uma lista vazia","Desliga o site"], exp:"E se a API estiver desligada, a ApiException diz: \"Não foi possível conectar à API... Ela está rodando?\""},
+    {t:"mc", q:"Por que o FilmeServlet faz <code>sendRedirect</code> depois de salvar?", o:["Para o formulário não ser enviado de novo ao apertar F5 (padrão Post/Redirect/Get)","Para ir para o Swagger","Para apagar o cache","Para trocar de porta"], exp:"Deu certo: redireciona e recarrega a tela. Deu errado: mostra o motivo e desenha a tela de novo."},
+    {t:"mc", q:"Por que usar <code>&lt;c:out&gt;</code> na JSP?", o:["Escreve o texto escapando HTML: um título &lt;script&gt; aparece como texto e não roda (proteção contra XSS)","Para deixar o texto em negrito","Para repetir o bloco","Para chamar a API"], exp:"c:forEach repete o bloco para cada item; c:if mostra só se a condição for verdadeira."},
+    {t:"mc", q:"Por que existem URL interna e URL pública da API?", o:["O servidor do site, dentro do Docker, usa http://api:8080/api; o navegador, fora do Docker, usa http://localhost:8080/api","Uma é para GET e a outra para POST","Uma é a de teste","Por segurança de senha"], exp:"O navegador não conhece o nome \"api\" do container. As duas ficam na ApiConfig (API_URL e API_URL_PUBLICA)."},
+    {t:"mc", q:"Quantos containers o docker-compose sobe?", o:["3: mysql, api e web","1: tudo junto","2: api e web","4: mysql, api, web e tomcat"], exp:"Ligue com docker compose up --build -d. API em localhost:8080/api, Swagger em /api/docs/ e site em localhost:8081/mvc/."},
+    {t:"mc", q:"O que faz <code>condition: service_healthy</code> na api?", o:["Só liga a API depois que o healthcheck do banco disser que ele está pronto","Reinicia o banco a cada minuto","Libera o CORS","Roda os testes"], exp:"O healthcheck do mysql usa mysqladmin ping."},
+    {t:"mc", q:"Por que o Dockerfile da API tem duas etapas?", o:["Etapa 1 compila com Maven e gera api.war; etapa 2 usa só o Tomcat, e a imagem final fica menor","Uma para Windows e outra para Linux","Uma para o banco e outra para o site","Para rodar os testes duas vezes"], exp:"O api.war copiado para webapps vira o endereço /api."},
+    {t:"mc", q:"Onde rodam os testes JUnit?", o:["Na camada Service, num banco H2 em memória que some quando o teste acaba","No MySQL de produção","No navegador","No Postman"], exp:"Rode com mvn test dentro de api/. assertThrows confere que nota 11 e nota −1 dão ValidacaoException."},
+    {t:"mc", q:"Como rodar no Windows sem Docker?", o:["powershell -ExecutionPolicy Bypass -File rodar-local.ps1 (usa H2; API e site em localhost:8080)","docker compose down -v","mvn clean","Abrindo o index.jsp no navegador"], exp:"O script baixa Java, Maven e Tomcat na primeira vez. Ctrl+C desliga."}
+  ]},
+  { title:"Ensaio da apresentação", sub:"Roteiro de 5 minutos e perguntas do professor", qs:[
+    {t:"ord", q:"Ordene o roteiro de 5 minutos.", items:["Tema (30 s): sugestão de filmes por categoria, notas de 0 a 10, ranking pela média","Estrutura (1 min): pastas api/ e web/; o site é só cliente da API","Camadas (1 min 30 s): FilmeApiController → FilmeService → FilmeDAO, com a analogia do restaurante","Demonstração (1 min 30 s): Swagger ou Postman","Fechamento (30 s): MySQL, documentação e código no GitHub"], exp:"Combine com a dupla quem explica cada parte, porque a avaliação é individual."},
+    {t:"ord", q:"Ordene a demonstração no Swagger/Postman.", items:["GET /api/filmes (200)","POST /api/filmes com Duna (201)","POST /api/avaliacoes com nota 11 (400, mostrar a mensagem)","GET /api/categorias/5/sugestoes (o ranking)","Mostrar que o filme novo aparece também no site"], exp:"Mostra leitura, criação, a regra funcionando e a parte principal do tema."},
+    {t:"mc", q:"\"Por que ter a camada Service? O Controller não podia falar direto com o DAO?\"", o:["Podia, mas as regras ficariam misturadas com o HTTP; no Service a regra fica num lugar só e vale para API, testes e outros apps","Não podia, o Java proíbe","Porque o DAO é lento","Porque o Swagger exige"], exp:"Resposta do guia, seção 9."},
+    {t:"mc", q:"\"O que acontece se eu apagar um filme que tem avaliações?\"", o:["409 Conflict, pedindo para apagar as avaliações antes; protege a integridade (e a FK também bloquearia)","Apaga tudo em cascata","Dá 404","Dá 204 e as avaliações ficam órfãs"], exp:"Mesma regra vale para categoria com avaliações."},
+    {t:"mc", q:"\"Como o site sabe onde está a API?\"", o:["Pela variável de ambiente API_URL, lida na classe ApiConfig; no Docker aponta para o container api","Está escrito fixo em cada JSP","Pelo banco de dados","Pelo Postman"], exp:"A URL pública (API_URL_PUBLICA) é a que o navegador usa na index.jsp."},
+    {t:"mc", q:"\"Como é calculada a sugestão?\"", o:["Uma consulta SQL junta filmes e avaliações da categoria, calcula AVG(nota) e ordena da maior média para a menor (FilmeDAO.sugerirPorCategoria)","O Java soma as notas num laço no controller","Pela nota mais recente","Por quem tem mais avaliações"], exp:"Empate é desfeito pela ordem alfabética do título."},
+    {t:"mc", q:"\"Onde está a documentação?\"", o:["Swagger em /api/docs/, coleção do Postman em api/docs/ e as tabelas no api/README.md","Só no PDF","No pom.xml","Nos comentários do init.sql"], exp:"No Swagger: clique num endpoint → Try it out → Execute. O arquivo que descreve tudo é o openapi.yaml."},
+    {t:"mc", q:"\"Que segurança básica vocês têm?\"", o:["PreparedStatement contra SQL Injection e &lt;c:out&gt; contra XSS","Login com senha","Criptografia do banco","Firewall no Docker"], exp:"Também não há senha escondida no código: tudo vem de variáveis de ambiente."},
+    {gen:"statusCode"}
+  ]}
+  ]
+};
+TRACKS.push(CINE_TRACK);
+
+Object.assign(LESSONS, {
+"cine:0": `
+<p class="key">Em uma frase: o usuário cadastra <b>filmes</b> e <b>categorias</b>, dá <b>notas de 0 a 10</b> para um filme dentro de uma categoria, e o sistema <b>sugere os melhores filmes de cada categoria</b> pela média das notas.</p>
+<p>Exemplo: Matrix recebeu 9 e Interestelar recebeu 10 em Ficção Científica. As sugestões mostram 1. Interestelar (10,0) e 2. Matrix (9,0).</p>
+<h3>API e REST</h3>
+<p>Pense num restaurante: o cliente não entra na cozinha, faz o pedido ao <b>garçom</b>. A <b>API</b> é o garçom, a porta de entrada pela qual outros programas (navegador, Postman, app, o nosso site) pedem coisas ao sistema.</p>
+<p><b>REST</b> é o jeito combinado de montar essa porta: cada coisa tem um <b>endereço</b> (<code>/api/filmes</code>, <code>/api/filmes/3</code>) e a ação é dita pelo <b>verbo HTTP</b>.</p>
+<span class="f">GET    /api/filmes     ler        Read
+POST   /api/filmes     criar      Create
+PUT    /api/filmes/3   atualizar  Update
+DELETE /api/filmes/3   apagar     Delete</span>
+<p>POST cria um recurso novo e o servidor escolhe o id. PUT atualiza um que já existe, com o id na URL.</p>
+<h3>JSON</h3>
+<span class="f">{ "id": 1, "titulo": "Matrix", "anoLancamento": 1999 }</span>
+<p>Objeto entre chaves, lista entre colchetes <code>[ ... ]</code>.</p>
+<h3>Códigos de status</h3>
+<span class="f">200 OK          buscar, listar, atualizar
+201 Created     cadastrou
+204 No Content  apagou (sucesso sem corpo)
+400 Bad Request nota 11, título vazio, JSON quebrado
+404 Not Found   GET /api/filmes/999
+409 Conflict    categoria repetida; apagar filme com avaliações
+500 Server Err. algo inesperado (banco fora do ar)</span>
+<p class="key">2xx = sucesso. 4xx = culpa de quem pediu. 5xx = culpa do servidor.</p>
+<h3>MVC</h3>
+<p><b>Model</b> são os dados (Filme, Categoria). <b>View</b> é o que a pessoa vê (JSP no site, JSON na API). <b>Controller</b> recebe o pedido e decide o que fazer. O trabalho pede mais duas camadas: <b>Service</b> e <b>DAO</b>.</p>`,
+
+"cine:1": `
+<h3>Dois projetos</h3>
+<span class="f">sistema-sugestao-filmes-mvc/
+├── api/   a API REST (JSON + banco)
+├── web/   o site com as telas (conversa com a API)
+├── docker-compose.yml   liga banco + API + site
+└── rodar-local.ps1      liga tudo no Windows sem Docker</span>
+<p>Separados para a API <b>não depender</b> do site. O site <b>nunca</b> acessa o banco: ele sempre pede para a API.</p>
+<span class="f">Navegador → web (telas) → HTTP/JSON → api → MySQL
+Postman   ─────────────→ HTTP/JSON → api → MySQL</span>
+<h3>As camadas da API (analogia do restaurante)</h3>
+<span class="f">CONTROLLER = garçom      recebe o pedido, lê o JSON, devolve resposta e código
+SERVICE    = cozinheiro  aplica as REGRAS ("nota de 0 a 10")
+DAO        = estoquista  busca e guarda no banco (SQL)
+MySQL      = despensa    onde os dados ficam</span>
+<p>Cada um só faz a sua parte: o garçom não sabe as regras, o cozinheiro pede ao estoquista, o estoquista não decide nada.</p>
+<h3>As pastas em api/src/main/java/br/com/mvc/</h3>
+<ul>
+<li><code>controller/</code>: FilmeApiController, CategoriaApiController, AvaliacaoApiController e a mãe ApiServlet.</li>
+<li><code>service/</code>: FilmeService, CategoriaService, AvaliacaoService (regras).</li>
+<li><code>dao/</code>: FilmeDAO, CategoriaDAO, AvaliacaoDAO (um por tabela).</li>
+<li><code>model/</code>: Filme, Categoria, Avaliacao (os moldes).</li>
+<li><code>exception/</code>, <code>config/</code> (ConnectionFactory, DatabaseBootstrap) e <code>filter/</code> (EncodingFilter, UTF-8).</li>
+</ul>
+<p><code>src/main</code> e <code>src/test</code> são padrão do Maven. <code>main</code> é só nome de pasta: quem liga o sistema é o <b>Tomcat</b>. <code>target/</code> é gerada pelo Maven e não vai para o GitHub. No <code>web/</code>, no lugar de dao e service está <code>client/</code>, que chama a API.</p>
+<h3>Um POST do começo ao fim</h3>
+<span class="f">POST /api/filmes  { "titulo": "Duna", "anoLancamento": 2021 }
+1. FilmeApiController.post → lerFilme → service.criar(filme)
+2. FilmeService.criar → validar (título, ano 1888..ano atual+5)
+3. FilmeDAO.inserir → INSERT INTO filmes (titulo, ano_lancamento) VALUES (?, ?)
+4. HTTP 201 Created, Location: /api/filmes/6, { "id": 6, ... }</span>`,
+
+"cine:2": `
+<h3>Todas as regras (camada Service)</h3>
+<ul>
+<li><b>Filme</b>: título obrigatório com até 150 caracteres; ano entre <b>1888</b> e o <b>ano atual + 5</b>.</li>
+<li><b>Categoria</b>: nome obrigatório com até 100 caracteres e <b>sem repetir</b> ("Ação" e "ação" contam como iguais).</li>
+<li><b>Avaliação</b>: nota de <b>0 a 10</b>; o filme e a categoria precisam existir.</li>
+<li><b>Não dá para apagar</b> filme ou categoria com avaliações (409).</li>
+<li><b>Sugestões</b>: filmes avaliados na categoria, ordenados pela média, da maior para a menor.</li>
+</ul>
+<h3>Exceções viram códigos</h3>
+<p>O Service <b>não sabe nada de HTTP</b>: ele só lança exceções. Quem traduz é o <b>ApiServlet</b>, a classe mãe dos controllers.</p>
+<span class="f">ValidacaoException             → 400
+RecursoNaoEncontradoException  → 404
+ConflitoException              → 409
+MetodoNaoPermitidoException    → 405
+qualquer outra                 → 500</span>
+<span class="f">{ "status": 400, "erro": "O título é obrigatório." }</span>
+<h3>O que mais o ApiServlet faz</h3>
+<ul>
+<li>Escolhe get, post, put ou delete conforme o verbo.</li>
+<li>Quebra o endereço: <code>/5/sugestoes</code> vira <code>["5", "sugestoes"]</code>.</li>
+<li>Lê e escreve JSON com a biblioteca <b>Gson</b>.</li>
+<li>Libera o <b>CORS</b> (outra página pode chamar a API pelo navegador).</li>
+</ul>
+<h3>Endpoints (base http://localhost:8080/api)</h3>
+<span class="f">/filmes, /categorias, /avaliacoes
+  GET (lista)   GET /{id}   POST   PUT /{id}   DELETE /{id}
+GET /categorias/{id}/sugestoes   ← o ranking
+GET /avaliacoes?filmeId=1  ou  ?categoriaId=5</span>
+<span class="f">{ "titulo": "Duna", "anoLancamento": 2021 }       filme
+{ "nome": "Terror" }                               categoria
+{ "filmeId": 1, "categoriaId": 5, "nota": 8 }      avaliação</span>`,
+
+"cine:3": `
+<h3>As 3 tabelas</h3>
+<span class="f">filmes:      id (PK), titulo, ano_lancamento
+categorias:  id (PK), nome
+avaliacoes:  id (PK), filme_id (FK→filmes), categoria_id (FK→categorias), nota</span>
+<p><b>PK</b> identifica cada linha e cresce sozinha (AUTO_INCREMENT). <b>FK</b> liga a avaliação a um filme e a uma categoria que existam. A avaliação é a <b>ponte</b>: um filme pode ter notas em várias categorias.</p>
+<p>As tabelas são criadas pelo <code>init.sql</code> (Docker, primeira vez) e pelo <b>DatabaseBootstrap</b>, um <code>@WebListener</code> que roda quando a API liga: <code>CREATE TABLE IF NOT EXISTS</code>, até <b>20 tentativas</b> com 2 s de espera (o MySQL pode estar ligando) e 5 filmes de exemplo se o banco estiver vazio.</p>
+<h3>ConnectionFactory</h3>
+<p>A fábrica de conexões: todo DAO chama <code>getConnection()</code>. Lê variáveis de ambiente (DB_MODE mysql ou h2, DB_HOST, DB_USER, DB_PASSWORD), então nenhuma senha fica escondida no código.</p>
+<span class="f">jdbc:mysql://mysql:3306/mvc_java
+MySQL na máquina "mysql" (container), porta 3306, banco mvc_java</span>
+<h3>DAO</h3>
+<span class="f">INSERT INTO filmes (titulo, ano_lancamento) VALUES (?, ?)</span>
+<ul>
+<li>Os <code>?</code> são preenchidos pelo <b>PreparedStatement</b>: proteção contra <b>SQL Injection</b>.</li>
+<li><code>RETURN_GENERATED_KEYS</code> pede ao banco o id que ele criou.</li>
+<li><code>try ( ... )</code> é try-with-resources: fecha a conexão sozinho.</li>
+<li><code>buscarPorId</code> devolve <code>Optional</code>, uma caixa que pode estar vazia; no Service, <code>orElseThrow</code> vira 404.</li>
+</ul>
+<h3>A consulta das sugestões (o coração do tema)</h3>
+<span class="f">SELECT f.id, f.titulo, f.ano_lancamento, AVG(a.nota) AS media
+FROM filmes f JOIN avaliacoes a ON a.filme_id = f.id
+WHERE a.categoria_id = ?
+GROUP BY f.id, f.titulo, f.ano_lancamento
+ORDER BY media DESC, f.titulo</span>
+<p>Exemplo: Matrix com notas 8 e 10 tem média 9,0; Duna com 7, 9 e 8 tem média 8,0. Matrix fica em 1º.</p>
+<h3>Model</h3>
+<p>Campos <code>private</code> com getters e setters (<b>encapsulamento</b>). O construtor vazio existe porque o Gson precisa dele. <code>media</code> é <code>Double</code> porque pode ser null: só existe nas sugestões.</p>`,
+
+"cine:4": `
+<h3>Como o site chama a API</h3>
+<span class="f">Clique em "Filmes"
+→ FilmeServlet (controller do site)
+→ FilmeClient: GET http://localhost:8080/api/filmes
+→ JSON vira objetos Filme
+→ filmes.jsp (view) monta o HTML</span>
+<ul>
+<li><b>ApiClient</b> é o "telefone": faz GET, POST, PUT e DELETE com o HttpClient do Java. Se a resposta for 400 ou mais, lê o campo "erro" e lança <code>ApiException</code> com a mesma mensagem. Se a API estiver desligada: "Não foi possível conectar à API... Ela está rodando?"</li>
+<li><b>TelaServlet</b> é a mãe das telas: carrega os dados; se der erro, mostra a mensagem em vermelho.</li>
+<li>Depois de salvar, <code>sendRedirect</code> evita reenviar o formulário no F5 (padrão <b>Post/Redirect/Get</b>).</li>
+<li>Na JSP: <code>&lt;c:forEach&gt;</code> repete, <code>&lt;c:if&gt;</code> condiciona e <code>&lt;c:out&gt;</code> escapa HTML, protegendo contra <b>XSS</b>.</li>
+</ul>
+<p class="key">Nota 11 na tela: o site manda POST /api/avaliacoes, a API responde 400 "A nota deve estar entre 0 e 10." e o site só mostra. A regra está só na API.</p>
+<h3>ApiConfig: duas URLs</h3>
+<p><b>Interna</b> (<code>http://api:8080/api</code>): usada pelo servidor do site dentro do Docker. <b>Pública</b> (<code>http://localhost:8080/api</code>): usada pelo navegador, que está fora do Docker e não conhece o nome "api". A index.jsp chama a API direto do navegador com <code>fetch</code>.</p>
+<h3>Docker</h3>
+<span class="f">docker compose up --build -d   sobe 3 containers: mysql, api, web
+API      http://localhost:8080/api/filmes
+Swagger  http://localhost:8080/api/docs/
+Site     http://localhost:8081/mvc/
+docker compose down      desliga
+docker compose down -v   apaga o banco</span>
+<p>A api tem <code>depends_on</code> com <code>condition: service_healthy</code>: só liga quando o banco responde ao healthcheck. O Dockerfile tem <b>duas etapas</b>: uma com Maven compila o api.war, a outra só com Tomcat roda (imagem menor). Sem Docker: <code>rodar-local.ps1</code>, com banco H2.</p>
+<h3>Testes</h3>
+<p>JUnit na camada <b>Service</b>, em <code>api/src/test</code>, com banco <b>H2 em memória</b> que some no fim. <code>assertEquals</code> confere o resultado; <code>assertThrows</code> confere que nota 11 e nota −1 dão ValidacaoException. Rode com <code>mvn test</code>.</p>`,
+
+"cine:5": `
+<h3>Roteiro de 5 minutos</h3>
+<ol>
+<li><b>Tema (30 s)</b>: "Sistema de sugestão de filmes por categoria. O usuário avalia filmes de 0 a 10 e o sistema monta um ranking pela média."</li>
+<li><b>Estrutura (1 min)</b>: mostre as pastas api/ e web/. "A API é um projeto separado. O site é só um cliente dela; ele não acessa o banco."</li>
+<li><b>Camadas (1 min 30 s)</b>: abra FilmeApiController → FilmeService → FilmeDAO e explique o caminho do POST com a analogia garçom, cozinheiro e estoquista.</li>
+<li><b>Demonstração (1 min 30 s)</b>, no Swagger ou no Postman: GET /api/filmes (200); POST /api/filmes com Duna (201); POST /api/avaliacoes com nota 11 (400, mostre a mensagem); GET /api/categorias/5/sugestoes (ranking); e mostre que o filme novo aparece no site.</li>
+<li><b>Fechamento (30 s)</b>: MySQL, documentação no Swagger/Postman/README e código no GitHub.</li>
+</ol>
+<p class="key">A avaliação é individual: combine com a dupla quem explica cada parte (por exemplo, uma pessoa a API e as camadas; a outra o banco, o site e a demonstração).</p>
+<h3>Resumo de uma página</h3>
+<ul>
+<li>Dois projetos: api/ (JSON + banco) e web/ (telas que chamam a API).</li>
+<li>Camadas: Controller (HTTP) → Service (regras) → DAO (SQL) → MySQL.</li>
+<li>CRUD de filmes, categorias e avaliações, mais o endpoint de sugestões.</li>
+<li>Erros: 400, 404, 409 e 500.</li>
+<li>Segurança: PreparedStatement e &lt;c:out&gt;.</li>
+<li>Documentação: Swagger, Postman e README. Testes: JUnit no Service com H2.</li>
+</ul>
+<p>Nesta fase vêm as perguntas que o professor pode fazer, com a resposta do guia.</p>`
+});
+
+
+/* ---------- Aplicações para Internet: fases de aula (slides e enunciados) ---------- */
+const APINET_PHASES = [
+  { title:"Ambiente Java Web", sub:"JDK, Maven, VS Code, Tomcat, build e deploy", qs:[
+    {t:"mc", q:"Qual extensão do VS Code é essencial para gerenciar o Tomcat?", o:["Community Server Connectors","Extension Pack for Java","Live Server","Docker"], exp:"O Extension Pack for Java (da Microsoft) dá suporte à linguagem. Quem gerencia o Tomcat dentro do VS Code é o Community Server Connectors."},
+    {t:"mc", q:"Quais variáveis de ambiente o slide manda configurar?", o:["JAVA_HOME, MAVEN_HOME e M2_HOME, e no Path a pasta bin do Java e do Maven","Só CLASSPATH","TOMCAT_PORT e DB_HOST","Nenhuma: o VS Code faz tudo"], exp:"MAVEN_HOME e M2_HOME apontam para o mesmo caminho do Maven."},
+    {t:"mc", q:"Como validar que o Maven reconheceu o Java?", o:["mvn -version, que mostra a versão do Maven e o JAVA_HOME","java -maven","mvn start","tomcat -version"], exp:"Antes, java -version deve mostrar a versão do JDK."},
+    {t:"mc", q:"Qual arquétipo do Maven cria um projeto web?", o:["maven-archetype-webapp","maven-archetype-quickstart","spring-boot-starter","java-web-basic"], exp:"No Command Palette (Ctrl+Shift+P): Java: Create Java Project → Maven → maven-archetype-webapp. Depois define o Group Id (br.com.escola) e o Artifact Id (projeto-web)."},
+    {t:"mc", q:"Na estrutura gerada, onde ficam os JSPs e HTMLs?", o:["src/main/webapp","src/main/java","target/","src/test"], exp:"Servlets e classes em src/main/java; JSPs e HTMLs em src/main/webapp; o web.xml em webapp/WEB-INF; as dependências no pom.xml."},
+    {t:"mc", q:"O que <code>mvn clean package</code> gera?", o:["A pasta target com o arquivo .war (ex.: projeto-web.war)","Um instalador .exe","O banco de dados","Um container Docker"], exp:"Esse é o build. O deploy é colocar o .war no Tomcat (botão direito → Run on Server)."},
+    {t:"mc", q:"O .war se chama projeto-web.war. Em qual endereço a aplicação abre?", o:["http://localhost:8080/projeto-web","http://localhost:3306/projeto-web","http://projeto-web.com","http://localhost:8080/"], exp:"O nome do .war vira o caminho da aplicação. É por isso que, no CineSugere, o api.war fica em /api."},
+    {t:"ord", q:"Ordene a configuração do Tomcat no VS Code.", items:["Na barra lateral, ir em Servers","Clicar em Create New Server","Selecionar Community Server Connector","Apontar para a pasta onde o Tomcat foi descompactado","Botão direito no servidor → Start Server"], exp:"Depois é só fazer o build e o deploy do .war."}
+  ]},
+  { title:"API REST nativa com Servlets", sub:"HttpServlet, GET, POST, PUT, PATCH, DELETE", qs:[
+    {t:"mc", q:"Por que usar HttpServlet nativo, sem Spring ou Jakarta REST?", o:["Controle total de headers, corpo e rotas, e menos camadas (mais leve)","Porque frameworks são proibidos em Java","Porque Servlet já gera JWT sozinho","Porque não precisa de servidor"], exp:"Os slides citam controle total (sem \"mágica\" de anotações) e performance pura (menos abstração, menos memória)."},
+    {t:"mc", q:"Sem framework, o que fica por nossa conta?", o:["Extrair parâmetros da URL, ler o corpo, converter JSON ↔ objeto (Gson) e escrever a resposta com o status","Nada: o Tomcat faz tudo","Só configurar o banco","Só escrever o HTML"], exp:"É exatamente o que o ApiServlet do CineSugere faz para os três controllers."},
+    {t:"mc", q:"Por que o mapeamento é <code>@WebServlet(\"/api/produtos/*\")</code>, com <code>/*</code>?", o:["Para o mesmo servlet atender /api/produtos e /api/produtos/10","Para aceitar só POST","Para bloquear outros endereços","Por causa do CORS"], exp:"O curinga captura o caminho com ou sem id. No CineSugere é @WebServlet(\"/filmes/*\"), e o /api vem do api.war."},
+    {t:"mc", q:"No doGet, como se descobre o id de /api/produtos/10?", o:["Extraindo manualmente do PathInfo (\"/10\")","req.getId()","Pelo corpo da requisição","Pelo cookie"], exp:"O getPathInfo() devolve o que vem depois do mapeamento. Se for null ou \"/\", é a lista; se for \"/10\", é o produto 10."},
+    {t:"mc", q:"No POST, como se lê o JSON enviado?", o:["Pelo corpo da requisição, com InputStream ou BufferedReader, e o Gson converte em objeto","Pela URL","Pelo PathInfo","Pelos headers"], exp:"E ao criar com sucesso: resp.setStatus(201)."},
+    {t:"mc", q:"O que significa o PUT ser <b>idempotente</b>?", o:["Repetir o mesmo PUT não muda o resultado além da primeira execução","Ele só pode ser chamado uma vez","Ele cria um recurso novo a cada chamada","Ele não precisa de id"], exp:"O PUT substitui o estado completo do objeto. Mandar o mesmo PUT 5 vezes deixa o recurso igual ao da primeira. O POST não é assim: cada chamada cria um novo."},
+    {t:"mc", q:"Como suportar PATCH num HttpServlet?", o:["Sobrescrevendo o método service, porque não existe doPatch","Chamando doPatch","Usando @Patch","Não é possível"], exp:"O ApiServlet do CineSugere já sobrescreve service() e faz um switch no verbo (GET, POST, PUT, DELETE, OPTIONS). Um case \"PATCH\" encaixaria ali."},
+    {t:"mc", q:"Qual a diferença entre PUT e PATCH?", o:["PUT substitui o objeto inteiro; PATCH altera só alguns campos","PATCH apaga e PUT cria","São iguais","PUT é para listas e PATCH para um item"], exp:"Pelos slides: PUT é atualização total. PATCH é a atualização parcial que exige o service sobrescrito."},
+    {t:"mc", q:"Qual status é o ideal num DELETE bem-sucedido?", o:["204 No Content","201 Created","200 com o objeto apagado","404"], exp:"A exclusão aconteceu e não há dados para devolver."},
+    {t:"mc", q:"Remoção lógica × física: quem decide?", o:["O Service. O controller só chama o service","O Controller","O Tomcat","O navegador"], exp:"Física apaga a linha; lógica muda um flag (ex.: ativo = false). No CineSugere a exclusão apaga a linha, e o Service antes confere se há avaliações (409)."}
+  ]},
+  { title:"Segurança com JWT", sub:"Stateless, Bearer, partes do token, filtro 401", qs:[
+    {t:"mc", q:"O que é autenticação <b>stateless</b>?", o:["O servidor não guarda sessão; os dados do usuário vão num token enviado em toda requisição","O servidor guarda tudo em cookie de sessão","Não existe login","O token fica salvo no banco a cada pedido"], exp:"Sem Session nem cookie de sessão. Cada requisição carrega o token."},
+    {t:"mc", q:"Em que header o token vai?", o:["Authorization: Bearer [token]","Content-Type: token","Cookie: JSESSIONID","Accept: jwt"], exp:"É o formato padrão: a palavra Bearer, um espaço e o token."},
+    {t:"ord", q:"Ordene as três partes de um JWT.", items:["Header: tipo do token e algoritmo (ex.: HS256)","Payload: as claims (id, nome, expiração)","Signature: garante que o token não foi alterado"], exp:"Na string do token, as três partes vêm separadas por pontos: header.payload.signature."},
+    {t:"mc", q:"Para que serve a Signature?", o:["Garantir que o token não foi alterado no caminho","Esconder o nome do usuário","Guardar a senha","Definir a porta da API"], exp:"Se alguém mudar o payload, a assinatura não confere e o token é rejeitado."},
+    {t:"vf", q:"Qualquer pessoa que pegar o token consegue ler o payload, porque ele é só codificado em Base64, não cifrado.", a:true, exp:"Verdadeiro. A assinatura impede alteração, mas não esconde o conteúdo. Por isso não se coloca senha no payload."},
+    {t:"mc", q:"Qual biblioteca os slides recomendam?", o:["java-jwt, da Auth0 (com.auth0, versão 4.4.0)","Gson","JUnit","O Java puro já gera JWT"], exp:"O Java puro não gera JWT sozinho. A alternativa famosa é a io.jsonwebtoken (jjwt), mas a da Auth0 tem a sintaxe mais amigável."},
+    {t:"ord", q:"Ordene a geração do token com a java-jwt.", items:["Algorithm alg = Algorithm.HMAC256(\"segredo\");","JWT.create().withIssuer(\"minha-api\")",".withClaim(\"userId\", 123).withExpiresAt(data)",".sign(alg); // devolve a String do token"], exp:"Algoritmo, builder, claims e assinatura."},
+    {t:"mc", q:"Onde validar o token para proteger as rotas?", o:["Num Filter, que roda antes do Servlet","Dentro de cada método doGet","No banco de dados","Na JSP"], exp:"O filtro verifica o token antes de qualquer controller. É o mesmo tipo de classe do EncodingFilter do CineSugere."},
+    {t:"mc", q:"O token chegou inválido ou vencido. O que o Filter responde?", o:["401 Unauthorized, sem deixar chegar ao Servlet","404 Not Found","500","200 com aviso"], exp:"401 = não autenticado. (403 Forbidden seria autenticado, mas sem permissão.)"},
+    {t:"mc", q:"Para que serve a claim de expiração (withExpiresAt)?", o:["Depois da data o token deixa de valer e o usuário precisa de um novo","Para apagar o usuário","Para trocar o algoritmo","Para criar a tabela de sessões"], exp:"Como o servidor não guarda sessão, a expiração limita por quanto tempo um token roubado funcionaria."}
+  ]},
+  { title:"Os enunciados T1 e T2", sub:"O que cada trabalho pede e como o CineSugere atende", qs:[
+    {t:"mc", q:"O que o T2 (API, 30 pontos) pede?", o:["API RESTful em Java, MVC com Controller, Service e DAO, CRUD, MySQL, endpoints documentados e projeto no GitHub","Um site só com HTML e CSS","Um app de celular","Uma API em Python com SQLite"], exp:"Além disso: boas práticas de organização, link do repositório no disco virtual do AVA e apresentação em sala."},
+    {t:"mc", q:"Quando é a apresentação e entrega do T2?", o:["26/11/2026","17/09/2026","Sem data definida","01/12/2026"], exp:"17/09/2026 foi a entrega do T1 (10 pontos)."},
+    {t:"mc", q:"Como os endpoints podem ser documentados, segundo o T2?", o:["README.md ou ferramenta como Postman ou Swagger","Só em PDF","Comentários no código bastam","Não precisa documentar"], exp:"O CineSugere tem os três: Swagger em /api/docs/, coleção do Postman em api/docs/ e o api/README.md."},
+    {t:"mc", q:"No T2, como é a avaliação dos alunos da dupla?", o:["Individual, durante a apresentação; todos devem contribuir","Uma nota igual para a dupla, sem apresentação","Só pelo código no GitHub","Por prova escrita"], exp:"Por isso o guia sugere dividir: uma pessoa explica API e camadas; a outra, banco, site e demonstração."},
+    {t:"mc", q:"O T2 é a continuação de quê?", o:["Do projeto que cada dupla definiu em sala (o T1, aplicação web MVC)","De um projeto novo, sorteado","Do trabalho de Redes","De nada: é independente"], exp:"No CineSugere, a pasta web/ é a aplicação MVC com telas e a api/ é a API REST pedida no T2."},
+    {t:"mc", q:"No T1, o que a apresentação precisava mostrar?", o:["O CRUD funcionando em tempo real e a estrutura de pastas, com o MVC aplicado numa funcionalidade","Só os slides","Só o banco de dados","O código de outro grupo"], exp:"O T1 também avaliava a participação dos dois no versionamento (Git)."},
+    {t:"mc", q:"Qual requisito do T1 o CineSugere atende com as views JSP + CSS?", o:["Interface dinâmica e interativa com HTML, CSS e, se necessário, JavaScript","Banco MySQL","Rotas","Testes"], exp:"As telas ficam em web/src/main/webapp (index.jsp, WEB-INF/views/*.jsp, css/estilo.css). A index.jsp usa JavaScript com fetch."},
+    {t:"vf", q:"O T2 aceita qualquer banco de dados, por exemplo H2.", a:false, exp:"Falso. O enunciado pede MySQL. O CineSugere usa MySQL no Docker; o H2 é só para os testes e para rodar sem instalar nada (rodar-local.ps1)."},
+    {t:"mc", q:"Onde postar o link do repositório do T2?", o:["No disco virtual do AVA","No diário de bordo","Por e-mail","Não precisa postar"], exp:"No T1 o link ia no diário de bordo. No T2, no disco virtual do AVA."}
+  ]}
+];
+
+const APINET_LESSONS = [
+`<p>Antes de qualquer código, o computador precisa estar pronto para compilar e rodar uma aplicação Java Web.</p>
+<h3>Requisitos e extensões</h3>
+<ul>
+<li><b>JDK</b> instalado.</li>
+<li><b>Maven</b> instalado e no PATH do sistema.</li>
+<li><b>Extension Pack for Java</b> (conjunto de extensões da Microsoft para o VS Code).</li>
+<li><b>Community Server Connectors</b>: essencial para gerenciar o Tomcat dentro do VS Code.</li>
+</ul>
+<h3>Variáveis de ambiente</h3>
+<span class="f">JAVA_HOME   → pasta do JDK
+MAVEN_HOME  → pasta do Maven
+M2_HOME     → o mesmo caminho do Maven
+Path        → bin do Java e bin do Maven</span>
+<p>Para validar: <code>java -version</code> mostra a versão do JDK; <code>mvn -version</code> mostra a do Maven e confirma que ele achou o JAVA_HOME.</p>
+<h3>Criando o projeto</h3>
+<p>O Maven usa <b>arquétipos</b> (modelos). Ctrl+Shift+P → <i>Java: Create Java Project</i> → Maven → <b>maven-archetype-webapp</b>. Defina o Group Id (ex.: <code>br.com.escola</code>) e o Artifact Id (ex.: <code>projeto-web</code>).</p>
+<span class="f">projeto-web/
+├── src/main/java/          Servlets e classes
+├── src/main/webapp/        JSPs e HTMLs
+│   └── WEB-INF/web.xml
+└── pom.xml                 dependências</span>
+<h3>Tomcat no VS Code</h3>
+<p>Servers → Create New Server → Community Server Connector → aponte para a pasta do Tomcat descompactado → botão direito → Start Server.</p>
+<h3>Build e deploy</h3>
+<span class="f">mvn clean package   → target/projeto-web.war
+botão direito no .war → Run on Server
+http://localhost:8080/projeto-web</span>
+<p class="key">O nome do .war vira o caminho da aplicação. No CineSugere, <code>api.war</code> fica em <code>/api</code>. Lá, o Docker e o <code>rodar-local.ps1</code> fazem esse build e deploy automaticamente.</p>`,
+
+`<p>Os slides mostram como montar uma API REST só com o <b>HttpServlet</b>, sem Spring ou Jakarta REST. É exatamente o que o CineSugere faz.</p>
+<h3>Por que Servlets?</h3>
+<ul>
+<li><b>Controle total</b>: você vê como o servidor trata headers, corpo e rotas, sem "mágica" de anotações.</li>
+<li><b>Performance</b>: menos camadas, menos memória.</li>
+</ul>
+<p>Em troca, fica por nossa conta: extrair parâmetros da URL, ler o corpo (payload), converter JSON ↔ objeto com o <b>Gson</b> e escrever a resposta com o status.</p>
+<h3>A rota base</h3>
+<span class="f">@WebServlet("/api/produtos/*")
+public class ProdutoController extends HttpServlet { ... }</span>
+<p>O <code>/*</code> faz o mesmo servlet atender <code>/api/produtos</code> e <code>/api/produtos/10</code>.</p>
+<h3>Os verbos</h3>
+<ul>
+<li><b>GET (doGet)</b>: leitura. O id é extraído manualmente do <b>PathInfo</b> ("/10").</li>
+<li><b>POST (doPost)</b>: lê o corpo com InputStream/BufferedReader, converte com Gson e responde <b>201</b>.</li>
+<li><b>PUT (doPut)</b>: atualização <b>total</b> (substitui o objeto inteiro). É <b>idempotente</b>: repetir o mesmo PUT não muda o resultado além da primeira vez.</li>
+<li><b>PATCH</b>: atualização parcial. <b>Não existe doPatch</b>: é preciso sobrescrever o método <code>service</code>.</li>
+<li><b>DELETE (doDelete)</b>: responde <b>204 No Content</b>. O controller só chama o service, e é o service que decide entre remoção <b>física</b> (apaga a linha) ou <b>lógica</b> (muda um flag).</li>
+</ul>
+<h3>Ligando com o CineSugere</h3>
+<ul>
+<li>Slide: <code>@WebServlet("/api/produtos/*")</code>. CineSugere: <code>@WebServlet("/filmes/*")</code> dentro do api.war.</li>
+<li>Slide: id pelo PathInfo "/10". CineSugere: <code>caminho()</code> devolve ["10"] ou ["5", "sugestoes"].</li>
+<li>Slide: Gson. CineSugere: Gson no ApiServlet.</li>
+<li>Slide: sobrescrever <code>service()</code>. CineSugere: <code>ApiServlet.service()</code> com switch no verbo.</li>
+<li>Slide: POST 201, DELETE 204. CineSugere: <code>criado()</code> responde 201 e <code>semConteudo()</code> 204.</li>
+</ul>
+<p class="key">Se o professor perguntar sobre PATCH: o ApiServlet já sobrescreve <code>service()</code>, então bastaria um <code>case "PATCH"</code> no switch.</p>`,
+
+`<h3>O que é JWT</h3>
+<p>Autenticação <b>stateless</b>: o servidor não guarda sessão (nem cookie de sessão). Os dados do usuário vão num <b>token</b> que o cliente manda em toda requisição:</p>
+<span class="f">Authorization: Bearer eyJhbGciOi...</span>
+<h3>As três partes</h3>
+<span class="f">Header     algoritmo e tipo (ex.: HS256)
+Payload    claims: id, nome, expiração
+Signature  assinatura digital
+
+token = header.payload.signature</span>
+<p>A <b>Signature</b> garante que o token não foi alterado no caminho. Atenção: o payload é só codificado (Base64), não escondido. Qualquer um consegue ler, então nada de senha lá dentro.</p>
+<h3>Biblioteca</h3>
+<p>O Java puro não gera JWT. Os slides recomendam a <b>java-jwt</b> da Auth0 (a alternativa é a jjwt).</p>
+<span class="f">&lt;dependency&gt;
+  &lt;groupId&gt;com.auth0&lt;/groupId&gt;
+  &lt;artifactId&gt;java-jwt&lt;/artifactId&gt;
+  &lt;version&gt;4.4.0&lt;/version&gt;
+&lt;/dependency&gt;</span>
+<h3>Gerando o token</h3>
+<span class="f">Algorithm alg = Algorithm.HMAC256("segredo");
+String token = JWT.create()
+    .withIssuer("minha-api")
+    .withClaim("userId", 123)
+    .withExpiresAt(data)
+    .sign(alg);</span>
+<h3>Verificando</h3>
+<p>Sempre num <b>Filter</b>, que roda antes do Servlet. Se o token for inválido ou estiver vencido, o filtro responde <b>401 Unauthorized</b> e o pedido nem chega ao controller.</p>
+<span class="f">JWT.require(alg).withIssuer("minha-api").build().verify(token);
+// token ruim → exceção → filtro responde 401</span>
+<p class="key">O guia do CineSugere não fala em login nem JWT. Se perguntarem, explique como seria: um filtro como o EncodingFilter, mas que lê o header Authorization e devolve 401 quando o token não vale.</p>`,
+
+`<h3>T1: Aplicação web MVC (10 pontos, entrega 17/09/2026)</h3>
+<ul>
+<li>Dupla, tema da lista do professor, Java com <b>MVC</b>, podendo usar <b>DAO</b> e <b>Service</b>.</li>
+<li>Pelo menos <b>um CRUD completo</b>.</li>
+<li>Etapas: ambiente (servidor local + MySQL), estrutura de pastas e rotas, tabelas + DAO + Service, interface com HTML/CSS/JS, testes, README e GitHub.</li>
+<li>Link no <b>diário de bordo</b>. Conta a participação dos dois no <b>Git</b>.</li>
+<li>Apresentação: demonstrar o CRUD em tempo real e explicar as pastas e o MVC numa funcionalidade.</li>
+</ul>
+<h3>T2: API (30 pontos, apresentação e entrega 26/11/2026)</h3>
+<ul>
+<li><b>API RESTful</b> completa em Java, padrão MVC com <b>Controller</b> (requisições e respostas), <b>Service</b> (regras) e <b>DAO</b> (banco).</li>
+<li><b>CRUD</b> sobre a entidade do tema e banco <b>MySQL</b>.</li>
+<li>Boas práticas de organização. Endpoints <b>documentados</b> (README, Postman ou Swagger).</li>
+<li>Projeto no <b>GitHub</b>, link no <b>disco virtual do AVA</b>.</li>
+<li>Apresentação em sala explicando estrutura e funcionamento. É a <b>continuação</b> do projeto da dupla. Avaliação <b>individual</b>.</li>
+</ul>
+<h3>Como o CineSugere atende cada item</h3>
+<span class="f">MVC + Service + DAO   controller/, service/, dao/, model/ na api/
+CRUD                  filmes, categorias e avaliações + sugestões
+MySQL                 container mysql no docker-compose
+Documentação          Swagger /api/docs/, Postman api/docs/, README
+Interface (T1)        web/: JSPs, CSS e index.jsp com fetch
+Testes                JUnit na camada Service (H2 em memória)
+GitHub                código no repositório da dupla</span>
+<p class="key">Leia o próximo bloco (parte=5 em diante) para o projeto em si, e termine pelo ensaio da apresentação.</p>`
+];
+
+/* junta na trilha CineSugere: as 4 fases de aula vêm antes */
+(function(){
+  const shifted = {};
+  CINE_TRACK.phases.forEach((_,i)=>{ shifted["cine:"+(i+APINET_PHASES.length)] = LESSONS["cine:"+i]; delete LESSONS["cine:"+i]; });
+  APINET_LESSONS.forEach((h,i)=>{ shifted["cine:"+i] = h; });
+  Object.assign(LESSONS, shifted);
+  CINE_TRACK.phases.unshift(...APINET_PHASES);
+  CINE_TRACK.tab = "Aplicações p/ Internet";
+  CINE_TRACK.dot = "P";
+  CINE_TRACK.intro = "Aplicações para Internet: o ambiente Java Web, a API REST com Servlets, JWT, os enunciados do T1 e do T2 e o projeto CineSugere (API RESTful + site em Java MVC), terminando com o ensaio da apresentação.";
+  CINE_TRACK.cola.unshift(
+    "Build: <code>mvn clean package</code> → <code>target/*.war</code>. O nome do .war vira o caminho (api.war → /api).",
+    "Servlet REST: <code>@WebServlet(\"/x/*\")</code>, id pelo PathInfo, corpo com Gson. POST 201, DELETE 204. PUT é total e idempotente; PATCH exige sobrescrever <code>service()</code>.",
+    "JWT: stateless, <code>Authorization: Bearer</code>, header.payload.signature, java-jwt da Auth0, validado num Filter que responde 401."
+  );
+})();
+
+/* ---------- estado ---------- */
+let trackIdx = 0;
+let S = null; // sessão de jogo
+
+function build(q, ti, pi){
+  const base = q.gen ? G[q.gen]() : q;
+  const out = Object.assign({}, base, {ti, pi});
+  if (out.t === "mc") { out.order = shuffle(out.o.map((_,i)=>i)); }
+  if (out.t === "ord") { out.pool = shuffle(out.items.map((_,i)=>i)); }
+  return out;
+}
+function startSessionNoLesson(mode, ti, pi){ startSession(mode, ti, pi, true); }
+function startSession(mode, ti, pi, skipLesson){
+  const tr = TRACKS[ti]; let queue = [], segments = [];
+  if (mode === "phase"){ queue = shuffle(tr.phases[pi].qs).map(q=>build(q,ti,pi)); segments=[{pi,start:0,end:queue.length}]; }
+  else if (mode === "journey"){
+    tr.phases.forEach((ph,p)=>{ const s=queue.length; shuffle(ph.qs).forEach(q=>queue.push(build(q,ti,p))); segments.push({pi:p,start:s,end:queue.length}); });
+  } else {
+    const all=[]; tr.phases.forEach((ph,p)=>ph.qs.forEach(q=>all.push([q,p])));
+    queue = shuffle(all).slice(0,10).map(([q,p])=>build(q,ti,p)); segments=[{pi:-1,start:0,end:queue.length}];
+  }
+  S = {mode, ti, pi, queue, segments, i:0, score:0, streak:0, best:0, results:[], hint:false, done:false};
+  if (mode === "flash" || skipLesson) renderQ(); else renderLesson(ti, segments[0].pi, renderQ);
+}
+
+/* ---------- telas ---------- */
+function signalPath(){
+  let d=""; const W=600,H=70;
+  for (let k=0;k<=400;k++){ const t=k/400*6.2; const y=Math.sin(t+Math.sin(t*t)); d+=(k?"L":"M")+(t/6.2*W).toFixed(1)+" "+(H/2-y*H*0.42).toFixed(1)+" "; }
+  return d;
+}
+function renderLesson(ti, pi, next, standalone){
+  const tr = TRACKS[ti], ph = tr.phases[pi];
+  app.innerHTML = `
+  ${standalone?"":`<div class="hud"><div class="left"><span>${S.i+1}/${S.queue.length}</span><span>pontos <b>${S.score}</b></span></div><button class="link" id="quit">Sair</button></div>
+  <div class="bar"><i style="width:${(S.i/S.queue.length*100).toFixed(1)}%"></i></div>`}
+  <section class="card">
+    <div class="qhead"><span class="tag ${tr.id==="net"?"net":""}">${tr.label}=${pi+1} · ${ph.title}</span><span class="eyebrow">Aula</span></div>
+    <h2>${ph.title}</h2>
+    <div class="lesson">${LESSONS[tr.id+":"+pi]}</div>
+    <div class="actions"><button class="btn" id="go">${standalone?"Jogar esta fase":"Entendi, começar as perguntas"}</button>${standalone?`<button class="link" id="quit">Voltar</button>`:""}</div>
+  </section>`;
+  $("#go").onclick = next;
+  $("#quit").onclick = renderHome;
+  window.scrollTo(0,0);
+}
+function renderHome(){
+  S = null;
+  const tr = TRACKS[trackIdx], best = store.get();
+  app.innerHTML = `
+  <header class="hero">
+    <span class="eyebrow">Revisão para a prova</span>
+    <h1>Revisão em Rede</h1>
+    <p class="muted">Três trilhas: redes neurais recorrentes, redes de computadores (Packet Tracer) e Aplicações para Internet, com o projeto CineSugere. Cada fase começa com uma aula curta, depois vêm as perguntas, e cada resposta traz a explicação.</p>
+    <svg class="signal" viewBox="0 0 600 70" preserveAspectRatio="none" aria-hidden="true"><line class="base" x1="0" y1="35" x2="600" y2="35"/><path d="${signalPath()}"/></svg>
+    <span class="mono muted" style="font-size:.8rem">x(n) = sen(n + sen(n²)), o sinal do exemplo de previsão da rede de Elman</span>
+  </header>
+  <div class="tabs" role="tablist">
+    ${TRACKS.map((t,i)=>`<button class="tab" role="tab" id="tab-${t.id}" aria-selected="${i===trackIdx}" data-track="${i}">${t.tab}</button>`).join("")}
+  </div>
+  <section class="track-intro">
+    <h2>${tr.tab}</h2>
+    <p class="muted">${tr.intro}</p>
+  </section>
+  <ol class="chain">
+    ${tr.phases.map((ph,i)=>{ const b = best[tr.id+":"+i];
+      return `<li class="node ${b!=null?"done":""}">
+        <div class="dot">${tr.dot||tr.label+"="}${i+1}</div>
+        <div class="info"><b>${ph.title}</b><span>${ph.sub} · ${ph.qs.length} questões</span></div>
+        <div class="node-side">
+          <div class="links"><button class="read" data-read="${i}">Aula</button><button class="play" data-phase="${i}" aria-label="Jogar a fase ${ph.title}">Jogar</button></div>
+          <span class="best">${b!=null?"recorde "+b+"%":"&nbsp;"}</span>
+        </div>
+      </li>`; }).join("")}
+  </ol>
+  <div class="cta-row">
+    <button class="btn" id="btn-journey">Jornada completa</button>
+    <button class="btn ghost" id="btn-flash">Relâmpago: 10 aleatórias</button>
+  </div>
+  ${best[tr.id+":journey"]!=null?`<p class="muted mono" style="font-size:.85rem">Recorde da jornada: ${best[tr.id+":journey"]} pontos</p>`:""}
+  <details class="cola"><summary>Cola rápida desta trilha</summary><ul>${tr.cola.map(c=>`<li>${c}</li>`).join("")}</ul></details>`;
+  app.querySelectorAll("[data-track]").forEach(b=>b.onclick=()=>{trackIdx=+b.dataset.track; renderHome();});
+  app.querySelectorAll("[data-phase]").forEach(b=>b.onclick=()=>startSession("phase",trackIdx,+b.dataset.phase));
+  app.querySelectorAll("[data-read]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.read, t=trackIdx; renderLesson(t, i, ()=>{ S=null; startSessionNoLesson("phase",t,i); }, true); });
+  $("#btn-journey").onclick=()=>startSession("journey",trackIdx);
+  $("#btn-flash").onclick=()=>startSession("flash",trackIdx);
+  window.scrollTo(0,0);
+}
+
+function points(q){ const base = (q.t==="num"||q.t==="txt"||q.t==="ord") ? 150 : 100; let p = Math.round(base*(1+0.1*Math.min(S.streak,5))); if (S.hint) p = Math.round(p/2); return p; }
+
+function renderQ(){
+  const q = S.queue[S.i], tr = TRACKS[S.ti], ph = tr.phases[q.pi];
+  S.hint = false; S.answered = false;
+  const seg = S.segments.find(s=>S.i>=s.start && S.i<s.end);
+  const kind = {mc:"Múltipla escolha", vf:"Verdadeiro ou falso", num:"Cálculo", txt:"Cálculo", ord:"Ordenar"}[q.t];
+  let body = "";
+  if (q.t==="mc") body = `<div class="opts">${q.order.map((oi,k)=>`<button class="opt" data-o="${oi}"><span class="k">${k+1}</span><span>${q.o[oi]}</span></button>`).join("")}</div>`;
+  if (q.t==="vf") body = `<div class="vf"><button class="opt" data-v="1">Verdadeiro</button><button class="opt" data-v="0">Falso</button></div>`;
+  if (q.t==="num"||q.t==="txt") body = `<div class="fields">${q.fields.map((f,k)=>`<div class="field"><label for="f${k}">${f.label}</label><input id="f${k}" inputmode="${q.t==="num"?"decimal":"text"}" autocomplete="off" placeholder="${q.t==="num"?"ex.: −0,0425":"ex.: 192.168.5.0"}"></div>`).join("")}</div>
+    <p class="muted" style="font-size:.85rem">${q.t==="num"?"Use vírgula ou ponto. Quatro casas decimais bastam; aceito erro de até 1%.":"Digite o endereço no formato a.b.c.d."}</p>`;
+  if (q.t==="ord") body = `<div class="ord-pick" id="pick"></div><div class="ord-pool" id="pool">${q.pool.map(ii=>`<button class="opt" data-i="${ii}"><span class="k">+</span><span>${q.items[ii]}</span></button>`).join("")}</div>`;
+  const canHint = q.t==="mc" || q.t==="num" || q.t==="txt";
+  app.innerHTML = `
+  <div class="hud">
+    <div class="left"><span>${S.i+1}/${S.queue.length}</span><span>pontos <b>${S.score}</b></span>${S.streak>=2?`<span class="combo">combo ×${S.streak}</span>`:""}</div>
+    <button class="link" id="quit">Sair</button>
+  </div>
+  <div class="bar"><i style="width:${(S.i/S.queue.length*100).toFixed(1)}%"></i></div>
+  <section class="card">
+    <div class="qhead"><span class="tag ${tr.id==="net"?"net":""}">${tr.label}=${q.pi+1} · ${ph.title}</span><span class="eyebrow">${kind}</span></div>
+    <div class="qtext">${q.q}</div>
+    ${body}
+    <div class="actions" id="actions">
+      ${(q.t==="num"||q.t==="txt")?`<button class="btn" id="check">Verificar</button>`:""}
+      ${q.t==="ord"?`<button class="btn" id="check" disabled>Conferir ordem</button><button class="link" id="clear">Recomeçar</button>`:""}
+      ${canHint?`<button class="link" id="hint">${q.t==="mc"?"Dica: eliminar 2 alternativas (metade dos pontos)":"Ver dica (metade dos pontos)"}</button>`:""}
+    </div>
+    <div id="hintbox"></div>
+    <div id="fb"></div>
+  </section>`;
+  $("#quit").onclick = renderHome;
+  if (q.t==="mc") app.querySelectorAll("[data-o]").forEach(b=>b.onclick=()=>answer(+b.dataset.o===0, b));
+  if (q.t==="vf") app.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>answer((b.dataset.v==="1")===q.a, b));
+  if (q.t==="num"||q.t==="txt"){
+    $("#check").onclick = checkFields;
+    app.querySelectorAll(".field input").forEach(inp=>inp.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!S.answered) checkFields(); }));
+    setTimeout(()=>{ const f=$("#f0"); if (f && window.matchMedia("(pointer:fine)").matches) f.focus(); },0);
+  }
+  if (q.t==="ord"){
+    S.picked = [];
+    app.querySelectorAll("#pool [data-i]").forEach(b=>b.onclick=()=>{ if(S.answered) return; S.picked.push(+b.dataset.i); b.hidden=true; drawPick(); });
+    $("#clear").onclick=()=>{ if(S.answered) return; S.picked=[]; app.querySelectorAll("#pool [data-i]").forEach(b=>b.hidden=false); drawPick(); };
+    $("#check").onclick=()=>{ const ok = S.picked.every((v,k)=>v===k); answer(ok, null); };
+  }
+  const hb = $("#hint");
+  if (hb) hb.onclick = ()=>{
+    if (S.answered || S.hint) return; S.hint = true; hb.remove();
+    if (q.t==="mc"){ const wrong = shuffle(q.order.filter(o=>o!==0)).slice(0,2); wrong.forEach(o=>{ const b=app.querySelector(`[data-o="${o}"]`); b.disabled=true; b.classList.add("gone"); }); }
+    else $("#hintbox").innerHTML = `<p class="exp"><b>Dica:</b> ${q.hint}</p>`;
+  };
+  window.scrollTo(0,0);
+}
+function drawPick(){
+  const q = S.queue[S.i];
+  $("#pick").innerHTML = S.picked.map((ii,k)=>`<div class="opt" style="cursor:default"><span class="k">${k+1}</span><span>${q.items[ii]}</span></div>`).join("");
+  $("#check").disabled = S.picked.length !== q.items.length;
+}
+function normIP(s){ return String(s).trim().replace(/\s/g,"").replace(/,/g,"."); }
+function checkFields(){
+  const q = S.queue[S.i]; let ok = true, empty = false;
+  q.fields.forEach((f,k)=>{
+    const inp = $("#f"+k), v = inp.value; if (v.trim()==="") empty = true;
+    let good;
+    if (q.t==="txt") good = normIP(v) === f.ans;
+    else { const u = parseNum(v); good = !isNaN(u) && (f.exact ? u===f.ans : near(u,f.ans)); }
+    inp.classList.toggle("right", good); inp.classList.toggle("wrong", !good); inp.disabled = true;
+    if (!good) ok = false;
+  });
+  if (empty && !ok){ q.fields.forEach((f,k)=>{ const i=$("#f"+k); i.disabled=false; i.classList.remove("right","wrong"); }); $("#hintbox").innerHTML = `<p class="exp muted">Preencha todos os campos antes de verificar.</p>`; return; }
+  answer(ok, null);
+}
+function answer(ok, btn){
+  if (S.answered) return; S.answered = true;
+  const q = S.queue[S.i];
+  let gained = 0;
+  if (ok){ S.streak++; gained = points(q); S.score += gained; S.best = Math.max(S.best,S.streak); }
+  else S.streak = 0;
+  S.results.push({q, ok});
+  let correctTxt = "";
+  if (q.t==="mc"){
+    app.querySelectorAll("[data-o]").forEach(b=>{ b.disabled=true; if(+b.dataset.o===0) b.classList.add("right"); });
+    if (!ok && btn) btn.classList.add("wrong");
+  }
+  if (q.t==="vf"){
+    app.querySelectorAll("[data-v]").forEach(b=>{ b.disabled=true; if((b.dataset.v==="1")===q.a) b.classList.add("right"); });
+    if (!ok && btn) btn.classList.add("wrong");
+  }
+  if (q.t==="num"||q.t==="txt") correctTxt = `<p class="mono" style="font-size:.9rem">Resposta: ${q.fields.map(f=>f.label+" "+(q.t==="txt"?f.ans:fmt(f.ans))).join("  ·  ")}</p>`;
+  if (q.t==="ord"){ $("#check").disabled = true; if(!ok) correctTxt = `<ol style="margin:0;padding-left:20px">${q.items.map(t=>`<li>${t}</li>`).join("")}</ol>`; }
+  const hint = $("#hint"); if (hint) hint.remove();
+  const clr = $("#clear"); if (clr) clr.remove();
+  const chk = $("#check"); if (chk && q.t!=="ord") chk.remove();
+  const last = S.i === S.queue.length-1;
+  const seg = S.segments.find(s=>S.i>=s.start && S.i<s.end);
+  const segEnd = S.mode==="journey" && S.i === seg.end-1 && !last;
+  $("#fb").innerHTML = `<div class="fb ${ok?"ok":"no"}" role="status">
+    <h3>${ok?`Certo! +${gained}`:"Não foi dessa vez"}</h3>
+    ${correctTxt}
+    <div class="exp">${q.exp}</div>
+  </div>
+  <div class="actions" style="margin-top:12px"><button class="btn" id="next">${last?"Ver resultado":segEnd?"Fechar fase":"Próxima"}</button></div>`;
+  const nx = $("#next"); nx.onclick = ()=>{ if (last) renderEnd(); else if (segEnd) renderSegment(seg); else { S.i++; renderQ(); } };
+  nx.focus({preventScroll:true});
+  $("#fb").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"nearest"});
+}
+function segStats(seg){ const r = S.results.slice(seg.start, seg.end); const c = r.filter(x=>x.ok).length; return {c, n:r.length, pct:Math.round(c/Math.max(1,r.length)*100)}; }
+function saveBest(key, val){ const b = store.get(); if (b[key]==null || val > b[key]) { b[key]=val; store.set(b); return true; } return false; }
+function renderSegment(seg){
+  const tr = TRACKS[S.ti], st = segStats(seg), ph = tr.phases[seg.pi];
+  saveBest(tr.id+":"+seg.pi, st.pct);
+  const nextPh = tr.phases[seg.pi+1];
+  app.innerHTML = `
+  <section class="card">
+    <span class="eyebrow">${tr.label}=${seg.pi+1} concluído</span>
+    <h2>${ph.title}</h2>
+    <div class="stats">
+      <div class="stat"><b>${st.c}/${st.n}</b><span>acertos</span></div>
+      <div class="stat"><b>${st.pct}%</b><span>da fase</span></div>
+      <div class="stat"><b>${S.score}</b><span>pontos até aqui</span></div>
+    </div>
+    <p class="muted">Próximo: <b>${tr.label}=${seg.pi+2} · ${nextPh.title}</b>, ${nextPh.sub.toLowerCase()}.</p>
+    <div class="actions"><button class="btn" id="go">Ler a aula de ${tr.label}=${seg.pi+2}</button><button class="link" id="quit">Parar aqui</button></div>
+  </section>`;
+  $("#go").onclick = ()=>{ S.i++; renderLesson(S.ti, seg.pi+1, renderQ); };
+  $("#quit").onclick = renderHome;
+  $("#go").focus({preventScroll:true});
+  window.scrollTo(0,0);
+}
+function renderEnd(){
+  const tr = TRACKS[S.ti], total = S.results.length, c = S.results.filter(r=>r.ok).length, pct = Math.round(c/total*100);
+  let rec = false;
+  if (S.mode==="phase") rec = saveBest(tr.id+":"+S.pi, pct);
+  if (S.mode==="journey"){ S.segments.forEach(seg=>saveBest(tr.id+":"+seg.pi, segStats(seg).pct)); rec = saveBest(tr.id+":journey", S.score); }
+  const msg = pct>=90 ? "Pronta para a prova nesse conteúdo." : pct>=70 ? "Bom resultado. Revise as que errou logo abaixo." : pct>=50 ? "Metade do caminho. Vale ler as explicações e jogar de novo." : "Comece pela cola rápida e tente de novo: as contas mudam a cada partida.";
+  const wrong = S.results.filter(r=>!r.ok);
+  const strip = h => h.replace(/<span class="f">[\s\S]*?<\/span>/g," [conta] ").replace(/<[^>]+>/g,"");
+  app.innerHTML = `
+  <section class="card">
+    <span class="eyebrow">${S.mode==="journey"?"Jornada completa":S.mode==="flash"?"Relâmpago":tr.label+"="+(S.pi+1)+" · "+tr.phases[S.pi].title} · ${tr.tab}</span>
+    <div class="big">${S.score}<span class="muted" style="font-size:1rem;font-weight:500"> pontos${rec?" · novo recorde":""}</span></div>
+    <div class="stats">
+      <div class="stat"><b>${c}/${total}</b><span>acertos</span></div>
+      <div class="stat"><b>${pct}%</b><span>aproveitamento</span></div>
+      <div class="stat"><b>×${S.best}</b><span>maior combo</span></div>
+    </div>
+    <p>${msg}</p>
+    <div class="actions"><button class="btn" id="again">Jogar de novo</button><button class="btn ghost" id="home">Escolher outra fase</button></div>
+  </section>
+  ${wrong.length?`<section class="card"><h2>Para revisar (${wrong.length})</h2><div class="review">${wrong.map(r=>`<article><span class="q">${strip(r.q.q)}</span>${r.q.t==="mc"?`<span><b>Certa:</b> ${r.q.o[0]}</span>`:r.q.t==="vf"?`<span><b>Certa:</b> ${r.q.a?"Verdadeiro":"Falso"}</span>`:(r.q.t==="num"||r.q.t==="txt")?`<span class="mono"><b>Certa:</b> ${r.q.fields.map(f=>f.label+" "+(r.q.t==="txt"?f.ans:fmt(f.ans))).join(" · ")}</span>`:`<span><b>Ordem:</b> ${r.q.items.join(" → ")}</span>`}<span class="muted">${strip(r.q.exp)}</span></article>`).join("")}</div></section>`:""}`;
+  const m = S.mode, ti = S.ti, pi = S.pi;
+  $("#again").onclick = ()=>startSession(m, ti, pi);
+  $("#home").onclick = renderHome;
+  window.scrollTo(0,0);
+}
+
+/* teclado: 1–4 escolhe, V/F, Enter avança */
+document.addEventListener("keydown", e=>{
+  if (!S || e.target.tagName==="INPUT") return;
+  const q = S.queue && S.queue[S.i]; if (!q) return;
+  if (!S.answered && q.t==="mc" && /^[1-4]$/.test(e.key)){ const b = app.querySelectorAll("[data-o]")[+e.key-1]; if (b && !b.disabled) b.click(); }
+  if (!S.answered && q.t==="vf" && /^[vf]$/i.test(e.key)){ app.querySelector(`[data-v="${e.key.toLowerCase()==="v"?1:0}"]`).click(); }
+});
+
+renderHome();
+window.__RNN_TEST__ = {G, TRACKS};
+})();
+</script>
+</body>
+</html>

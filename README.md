@@ -26,6 +26,7 @@ PMC  →  PMC 2 saídas  →  LVQ  →  RBF  →  AG  →  AG com restrições
 | 5 | Algoritmo genético | aquário de 100 L | `05-algoritmo-genetico-aquario` | `ava-envio/Atividade_05_AG.txt` |
 | 6 | AG com restrições | volume + proporção 2,5 | `06-ag-aquario-restricoes` | `ava-envio/Atividade_06_AG_restricoes.txt` |
 | — | **Stewart 4.7 (trabalho IA)** | AG + derivada, ex. 1–78 | [`trabalho_IA/`](trabalho_IA/) | ver `trabalho_IA/README.md` |
+| — | **Estudos para a prova** | Redes Recorrentes + Redes 2 | [`estudos/`](estudos/) | ver `estudos/README.md` |
 
 ---
 
