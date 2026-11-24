@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Revisão em Rede</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
 <style>
 /* Layout: uma coluna estreita; a trilha de fases é desenhada como uma rede desdobrada no tempo (nós ligados por setas) */
@@ -51,6 +52,7 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid
 .tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px}
 .tab{flex:1;min-width:0;border:0;background:transparent;border-radius:8px;padding:10px 8px;font-weight:600;font-size:.95rem;color:var(--muted)}
 .tab[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+@media (max-width:560px){.tabs{display:grid;grid-template-columns:1fr 1fr}.tab{padding:9px 6px;font-size:.9rem}}
 .track-intro{display:flex;flex-direction:column;gap:6px}
 
 .chain{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0}
@@ -140,7 +142,6 @@ details.cola ul{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:co
 </style>
 </head>
 <body>
-
 <main class="wrap" id="app"></main>
 
 <script>
@@ -1110,6 +1111,309 @@ GitHub                código no repositório da dupla</span>
   );
 })();
 
+
+/* ---------- geradores: ART e CNN ---------- */
+const ri = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+G.art1Step = () => {
+  const p = ri(6,17), s = ri(15,35), c = ri(3, Math.min(p, s));
+  const b = 2/(1+p), y1 = c*b, yo = s*0.02, raz = c/s, ok = raz >= 0.5;
+  return { t:"num",
+    q:`ART1 com n = 49, L = 2 e ρ = 0,5. A categoria 1 já aprendeu e tem protótipo com <b>${p}</b> pixels, então b(i,1) = 2/(1+${p}). As outras categorias ainda estão com b = 0,02. Chega um desenho com |s| = <b>${s}</b> pixels pretos, dos quais <b>${c}</b> coincidem com o protótipo da categoria 1. Calcule y(1), y de uma categoria livre e a razão |x|/|s| se a categoria 1 vencer.`,
+    fields:[{label:"y(1) =", ans:y1},{label:"y(livre) =", ans:yo},{label:"|x| / |s| =", ans:raz}],
+    hint:"y(j) = Σ b(i,j)·s(i): só contam os pixels em comum com o protótipo, cada um vale b. Categoria livre: todos os |s| pixels valem 0,02.",
+    exp:`<span class="f">b(i,1) = 2/(1+${p}) = ${fmt(b)}
+y(1) = ${c} · ${fmt(b)} = ${fmt(y1)}
+y(livre) = ${s} · 0,02 = ${fmt(yo)}
+vence a ${y1 >= yo ? "categoria 1" : "categoria livre"}</span>${y1 >= yo
+      ? `Com a categoria 1 vencendo: ${c}/${s} = ${fmt(raz)} ${ok ? "≥ 0,5 → <b>ressonância</b>: o protótipo vira os "+c+" pixels em comum e b = 2/(1+"+c+") = "+fmt(2/(1+c))+"." : "&lt; 0,5 → <b>reset</b>: a categoria 1 é inibida e a busca continua. Uma categoria livre aceita o desenho (|s|/|s| = 1), como aconteceu com o Gato 1 (8/31 = 0,258)."}`
+      : `A categoria livre vence logo de cara. A razão com ela é |s|/|s| = 1 ≥ 0,5, então ela vira uma nova categoria. (Se a categoria 1 tivesse vencido, a razão seria ${fmt(raz)}.)`}` };
+};
+G.art1B = () => {
+  const c = ri(5,34), L = 2, b = L/(L-1+c);
+  return { t:"num",
+    q:`Na ART1 do trabalho (L = 2), houve ressonância e o novo protótipo ficou com |x| = <b>${c}</b> pixels. Qual é o novo peso b(i,J) dos pixels do protótipo?`,
+    fields:[{label:"b(i,J) =", ans:b}],
+    hint:"b(i,J) = L·x(i) / (L − 1 + |x|). Para os pixels do protótipo, x(i) = 1.",
+    exp:`<span class="f">b = 2·1 / (2 − 1 + ${c}) = 2/${1+c} = ${fmt(b)}</span>Quanto menor o protótipo, maior o peso de cada pixel. Por isso a categoria das pessoas, com protótipo pequeno, chegou a b = 0,2 (9 pixels).` };
+};
+G.gray = () => {
+  const R = ri(0,255), Gc = ri(0,255), B = ri(0,255), g = 0.299*R + 0.587*Gc + 0.114*B;
+  return { t:"num",
+    q:`Converta para tons de cinza o pixel com R = <b>${R}</b>, G = <b>${Gc}</b> e B = <b>${B}</b>, usando a fórmula do trabalho.`,
+    fields:[{label:"cinza =", ans:g}],
+    hint:"cinza = 0,299·R + 0,587·G + 0,114·B. O verde pesa mais porque o olho humano é mais sensível a ele.",
+    exp:`<span class="f">0,299·${R} + 0,587·${Gc} + 0,114·${B}
+= ${fmt(0.299*R)} + ${fmt(0.587*Gc)} + ${fmt(0.114*B)} = ${fmt(g)}</span>No trabalho: o pixel do olho do gato (76, 39, 13) deu 47,099 ≈ 47.` };
+};
+G.fuzzy = () => {
+  const r3 = v => +v.toFixed(3);
+  const c1 = [ri(90,200),ri(70,170),ri(50,150)], c2 = c1.map(v=>Math.min(255,Math.max(0,v+ri(-25,25))));
+  const a1 = c1.map(v=>r3(v/255)), a2 = c2.map(v=>r3(v/255));
+  const w = [0,1,2].map(i=>Math.min(a1[i],a2[i])).concat([0,1,2].map(i=>r3(1-Math.max(a1[i],a2[i]))));
+  const dark = Math.random() < 0.5;
+  const px = dark ? [ri(20,90),ri(15,80),ri(10,80)] : c1.map(v=>Math.min(255,Math.max(0,v+ri(-35,35))));
+  const a = px.map(v=>r3(v/255)), I = a.concat(a.map(v=>r3(1-v)));
+  const m = I.map((v,i)=>Math.min(v,w[i])), soma = m.reduce((x,y)=>x+y,0), cas = soma/3;
+  const f3 = arr => arr.map(v=>fmt(v)).join("  ");
+  return { t:"num",
+    q:`Fuzzy ART com ρ = 0,70. A categoria 1 tem <span class="f">w(1) = [${f3(w)}]</span>Chega o pixel RGB = (${px.join(", ")}), com codificação complementar <span class="f">I = [${f3(I)}]</span>Calcule |I ∧ w(1)| e o casamento.`,
+    fields:[{label:"|I ∧ w(1)| =", ans:soma},{label:"casamento =", ans:cas}],
+    hint:"∧ é o mínimo posição a posição. |·| é a soma. Casamento = |I ∧ w| / |I|, e |I| = 3 sempre (por causa do complemento).",
+    exp:`<span class="f">I ∧ w(1) = [${f3(m)}]
+soma = ${fmt(soma)}
+casamento = ${fmt(soma)} / 3 = ${fmt(cas)}  ${cas>=0.7?"≥ 0,70 → ressonância (w(1) = I ∧ w(1), com β = 1)":"&lt; 0,70 → reset (se nenhuma servir, cria categoria nova com w = I)"}</span>É o mesmo cálculo dos 4 pixels do gato no trabalho: o 4º pixel, escuro, deu 0,668 e criou a categoria 2.` };
+};
+const KERNELS = {
+  "Sobel X":[[-1,0,1],[-2,0,2],[-1,0,1]], "Sobel Y":[[-1,-2,-1],[0,0,0],[1,2,1]],
+  "Laplaciano":[[0,1,0],[1,-4,1],[0,1,0]], "Nitidez":[[0,-1,0],[-1,5,-1],[0,-1,0]]
+};
+G.conv = () => {
+  const name = pick(Object.keys(KERNELS)), k = KERNELS[name];
+  const base = ri(60,180), edge = Math.random()<0.6;
+  const x = [0,1,2].map(i=>[0,1,2].map(j=>Math.max(0,Math.min(255, base + (edge && j===2 ? -ri(60,100) : 0) + ri(-15,15)))));
+  let s = 0; const terms = [];
+  for (let i=0;i<3;i++) for (let j=0;j<3;j++){ s += k[i][j]*x[i][j]; if (k[i][j]!==0) terms.push(`${x[i][j]}·${par(k[i][j])}`); }
+  const grid = m => m.map(r=>r.map(v=>String(v).padStart(4," ")).join("")).join("\n");
+  return { t:"num",
+    q:`Aplique o filtro <b>${name}</b> nesta janela 3x3 (valor da posição central da saída).<span class="f">janela          núcleo ${name}
+${grid(x).split("\n").map((l,i)=>l+"      "+k[i].map(v=>String(v).padStart(3," ")).join("")).join("\n")}</span>`,
+    fields:[{label:"saída =", ans:s}],
+    hint:"Multiplique cada pixel pelo peso na mesma posição do núcleo e some tudo. Pesos 0 podem ser pulados.",
+    exp:`<span class="f">${terms.join(" + ")}
+= ${fmt(s)}</span>${name==="Sobel X"?"Negativo = passagem de claro para escuro da esquerda para a direita (como a borda da pupila, −400).":name==="Sobel Y"?"O Sobel Y responde a bordas horizontais (claro/escuro de cima para baixo).":name==="Laplaciano"?"Perto de 0 = região lisa; longe de 0 = borda em alguma direção.":"Os pesos somam 1, então em região lisa o brilho se mantém; perto de borda, o centro se afasta dos vizinhos."}` };
+};
+G.outSize = () => {
+  const c = pick([[150,3,0,1],[226,3,0,1],[256,3,0,1],[6,3,0,1],[28,5,0,1],[32,3,1,1],[64,3,1,2],[227,11,0,4],[7,3,0,2],[224,7,3,2]]);
+  const [N,K,P,S] = c, o = (N-K+2*P)/S+1;
+  return { t:"num",
+    q:`Qual o tamanho da saída de uma convolução com entrada N = <b>${N}</b>, núcleo K = <b>${K}</b>, borda extra P = <b>${P}</b> e passo S = <b>${S}</b>?`,
+    fields:[{label:"saída =", ans:o, exact:true}],
+    hint:"tamanho = (N − K + 2P) / S + 1",
+    exp:`<span class="f">(${N} − ${K} + 2·${P}) / ${S} + 1 = ${N-K+2*P}/${S} + 1 = ${o}</span>No trabalho: 150x226 → 148x224 (gato) e 256x256 → 254x254 (pessoa), com K = 3, P = 0 e S = 1.` };
+};
+G.pool = () => {
+  const m = [0,1,2,3].map(()=>[0,1,2,3].map(()=>ri(-200,200)));
+  const r = m.map(row=>row.map(v=>Math.max(0,v)));
+  const blk = (i,j)=>Math.max(r[i][j],r[i][j+1],r[i+1][j],r[i+1][j+1]);
+  const out = [blk(0,0),blk(0,2),blk(2,0),blk(2,2)];
+  const grid = mm => mm.map(row=>row.map(v=>String(v).padStart(5," ")).join("")).join("\n");
+  return { t:"num",
+    q:`Mapa de características 4x4 depois da convolução:<span class="f">${grid(m)}</span>Aplique a <b>ReLU</b> e depois o <b>max pooling 2x2</b>. Dê os 4 valores (blocos: superior esquerdo, superior direito, inferior esquerdo, inferior direito).`,
+    fields:[{label:"sup. esq. =", ans:out[0], exact:true},{label:"sup. dir. =", ans:out[1], exact:true},{label:"inf. esq. =", ans:out[2], exact:true},{label:"inf. dir. =", ans:out[3], exact:true}],
+    hint:"ReLU: negativo vira 0. Pooling 2x2: divida em 4 blocos de 2x2 e pegue o maior de cada.",
+    exp:`<span class="f">depois da ReLU:
+${grid(r)}
+pooling: ${out.join("  ")}</span>16 números viram 4 e as respostas fortes continuam. Se o bloco todo for negativo, o resultado é 0.` };
+};
+
+/* ---------- trilha ART e CNN ---------- */
+TRACKS.push({ id:"art", tab:"ART e CNN", label:"etapa", dot:"E", tag:"IA",
+  intro:"O trabalho de IA de Raphaela e Karen: Teoria da Ressonância Adaptativa (ART1 e Fuzzy ART) com imagens de pessoa e de gato, e filtros de convolução como numa CNN. As contas usam os números do próprio trabalho.",
+  cola:[
+    "ART: aprendizado <b>não supervisionado</b>; resolve o dilema <b>estabilidade × plasticidade</b> (Carpenter e Grossberg, 1987).",
+    "F1 compara, F2 reconhece (um neurônio por categoria). Semelhança ≥ ρ → <b>ressonância</b>; menor → <b>reset</b>.",
+    "ART1: b = 1/(1+n) = 0,02, t = 1; y = Σ b·s; x = s AND t(J); |x|/|s| ≥ ρ; b = L·x/(L−1+|x|) = 2/(1+|x|).",
+    "Gato 1: y(1) = 0,889 venceu, mas 8/31 = 0,258 &lt; 0,5 → reset → categoria 2.",
+    "Fuzzy ART: I = [a, 1−a]; T = |I∧w|/(α+|w|); casamento = |I∧w|/3; α = 0,001, β = 1, ρ = 0,70. Gato 8 cores, pessoa 19.",
+    "Cinza = 0,299R + 0,587G + 0,114B. Saída = (N−K+2P)/S + 1. ReLU = max(0, x). Pooling 2x2 = maior de cada bloco.",
+    "Sobel X na pupila: −120 na posição (1,1) e pico −400. Média 118,22, gaussiano 118,50, nitidez 112, Sobel Y −26, Laplaciano 6."
+  ],
+  phases:[
+  { title:"Teoria da Ressonância Adaptativa", sub:"Estabilidade × plasticidade, F1, F2, vigilância", qs:[
+    {t:"mc", q:"Que problema a ART foi criada para resolver?", o:["O dilema estabilidade × plasticidade: aprender padrões novos sem apagar os antigos","O gradiente que desaparece em redes profundas","A falta de dados rotulados para o backpropagation","O excesso de neurônios na camada oculta"], exp:"Carpenter e Grossberg (1987). Se a entrada não se parece com nenhuma categoria, a rede cria outra em vez de estragar as que já existem."},
+    {t:"mc", q:"A ART aprende de que forma?", o:["Não supervisionada: a própria rede descobre como os dados se agrupam","Supervisionada, com a resposta certa em cada exemplo","Por reforço, com recompensas","Por algoritmo genético"], exp:"No trabalho, a ART1 não recebe a informação de qual desenho é pessoa e qual é gato."},
+    {t:"mc", q:"Qual o papel da camada F1?", o:["Comparação: recebe a entrada e compara com o protótipo da categoria escolhida","Reconhecimento: um neurônio por categoria","Guardar a vigilância","Calcular o erro quadrático"], exp:"F1 compara; F2 reconhece, com um neurônio por categoria, e o de maior entrada ponderada vence a competição."},
+    {t:"mc", q:"O que acontece quando a semelhança fica <b>abaixo</b> da vigilância ρ?", o:["Reset: a categoria vencedora é inibida e a busca continua","Ressonância: a categoria aprende o padrão","A rede para de treinar","O padrão é descartado para sempre"], exp:"Se nenhuma categoria existente servir, um neurônio livre passa a representar uma categoria nova."},
+    {t:"mc", q:"Vigilância alta produz…", o:["Muitas categorias, mais específicas","Poucas categorias, mais gerais","Sempre 2 categorias","Nenhuma categoria"], exp:"ρ alto é exigente: só aceita padrões muito parecidos. ρ baixo junta quase tudo."},
+    {t:"vf", q:"Na ressonância, a categoria vencedora aprende o padrão; no reset, ela é inibida só naquela busca.", a:true, exp:"Verdadeiro. A inibição vale para a apresentação atual; no próximo padrão todas as categorias competem de novo."},
+    {t:"ord", q:"Ordene o ciclo da ART para um padrão.", items:["A entrada chega e F2 calcula a entrada ponderada de cada categoria","Vence a categoria com maior entrada","F1 compara a entrada com o protótipo do vencedor","Se semelhança ≥ ρ, ressonância e aprendizado; se não, reset e volta à competição"], exp:"Escolha, vencedor, comparação e teste de vigilância."}
+  ]},
+  { title:"ART1 passo a passo", sub:"Pessoas e gatos 7x7, Gato 1 com 8/31", qs:[
+    {t:"mc", q:"Que tipo de entrada a ART1 aceita?", o:["Binária (0 e 1)","Valores entre 0 e 1","Qualquer número real","Só imagens coloridas"], exp:"Cada desenho 7x7 vira um vetor de 49 valores binários, lidos linha por linha (1 = pixel preto)."},
+    {t:"mc", q:"Com n = 49, quais são os pesos iniciais?", o:["b(i,j) = 1/(1+n) = 1/50 = 0,02 e t(j,i) = 1","b = 1 e t = 0","b = 0,5 e t = 0,5","b = 1/49 e t = 0"], exp:"Formulação de Fausett (1994). Atenção: no código, um comentário antigo ainda fala em 1/26 = 0,0385, mas o valor calculado é 1/50 = 0,02."},
+    {t:"mc", q:"Como a ART1 faz a comparação em F1?", o:["x = s AND t(J): só os pixels pretos nos dois","x = s + t(J)","x = s − t(J)","x = média de s e t(J)"], exp:"Por isso o protótipo, depois de aprender, guarda só a parte comum dos desenhos da categoria."},
+    {t:"mc", q:"Pessoa 1, o primeiro padrão: todas as categorias dão y = 17 · 0,02 = 0,340. Quem vence?", o:["A categoria 1, porque o empate é resolvido a favor do menor índice","Nenhuma","A categoria 6","Todas aprendem juntas"], exp:"17/17 = 1 ≥ 0,5, ressonância; b(i,1) = 2/(2−1+17) = 0,1111 e t(1) = Pessoa 1."},
+    {t:"mc", q:"Gato 1: y(1) = 0,889 venceu as livres (0,620). Por que ele não entrou na categoria das pessoas?", o:["Só 8 dos 31 pixels coincidem: 8/31 = 0,258 &lt; 0,5, então houve reset","Porque y(1) era menor","Porque a rede sabia que era gato","Porque a categoria 1 estava cheia"], exp:"O reset impede que o gato estrague o que a rede já sabia sobre pessoas. A categoria 2 aceita (31/31 = 1) e b = 2/32 = 0,0625."},
+    {t:"mc", q:"Gato 3 chegou com 34 pixels e contém os 28 do protótipo do grupo 2. O que muda?", o:["Nada no protótipo: 28/34 = 0,824 é ressonância, e t(2) continua com os mesmos 28 pixels","O protótipo cresce para 34 pixels","Cria uma categoria nova","O grupo 2 é apagado"], exp:"Como t é a interseção (AND), o protótipo nunca ganha pixels, só perde ou fica igual."},
+    {t:"mc", q:"Como ficaram os grupos com ρ = 0,5?", o:["As 3 pessoas na categoria 1 e os 3 gatos na categoria 2","6 categorias, uma por desenho","Tudo numa categoria só","Pessoa 3 sozinha numa categoria"], exp:"Uma segunda passada não mudou nada (rede estável). No teste sem aprender: pessoa nova → 1 (0,529), gato novo → 2 (0,824)."},
+    {gen:"art1Step"},{gen:"art1B"},{gen:"art1Step"}
+  ]},
+  { title:"O efeito da vigilância", sub:"De 1 a 5 categorias", qs:[
+    {t:"mc", q:"Com ρ = 0,1, quantas categorias se formaram?", o:["1: todos os desenhos juntos","2","3","6"], exp:"Pouco exigente: quase qualquer semelhança basta."},
+    {t:"mc", q:"Em que faixa de ρ a rede separou exatamente pessoas e gatos?", o:["De 0,3 a 0,5","Só em 0,1","De 0,6 a 0,9","Só em 0,9"], exp:"Tabela 2 do trabalho: 0,3 e 0,5 dão 2 categorias, P em 1 e G em 2."},
+    {t:"mc", q:"Com ρ = 0,6, o que mudou?", o:["3 categorias: a Pessoa 3 foi para um grupo próprio","1 categoria","Os gatos se separaram todos","Nada"], exp:"A partir de 0,6 a rede começa a separar variações do mesmo tipo de desenho."},
+    {t:"mc", q:"E com ρ = 0,9?", o:["5 categorias: quase um grupo por desenho","2 categorias","1 categoria","6 categorias exatas"], exp:"Muito exigente. Só Gato 1 e Gato 2 ficaram juntos."},
+    {t:"vf", q:"A vigilância é o parâmetro que controla o nível de detalhe do agrupamento.", a:true, exp:"Verdadeiro. É a principal conclusão da seção 4.2."},
+    {t:"mc", q:"Se a professora pedir só \"pessoa ou animal\", que ρ você escolheria pelos resultados?", o:["Entre 0,3 e 0,5 (o trabalho usou 0,5)","0,1","0,9","Qualquer um dá no mesmo"], exp:"É a faixa em que as duas categorias aparecem exatamente."}
+  ]},
+  { title:"Fuzzy ART nas cores", sub:"Codificação complementar, gato 8 cores, pessoa 19", qs:[
+    {t:"mc", q:"O que a Fuzzy ART muda em relação à ART1?", o:["Aceita valores entre 0 e 1 e troca o AND pelo mínimo (∧)","Passa a ser supervisionada","Remove a vigilância","Usa backpropagation"], exp:"Carpenter, Grossberg e Rosen (1991). Cada pixel entra como [R G B]/255."},
+    {t:"mc", q:"Para que serve a codificação complementar I = [a, 1 − a]?", o:["Faz |I| ser sempre igual à dimensão de a (3) e deixa a categoria guardar o mínimo e o máximo de cada canal","Dobra o brilho da imagem","Converte para tons de cinza","Normaliza o erro"], exp:"As 3 primeiras posições de w guardam o menor valor de cada canal; as 3 últimas, 1 menos o maior. Cada categoria é uma \"caixa\" de cores."},
+    {t:"mc", q:"Qual é a função de escolha?", o:["T(j) = |I ∧ w(j)| / (α + |w(j)|)","T(j) = Σ b·s","T(j) = |I| / ρ","T(j) = max(0, I)"], exp:"α = 0,001 evita divisão por zero. Vence a maior T."},
+    {t:"mc", q:"E o teste de vigilância?", o:["|I ∧ w(J)| / |I| ≥ ρ, com |I| = 3","T(J) ≥ ρ","|w(J)| ≥ ρ","|I| / |w| ≥ ρ"], exp:"No trabalho, ρ = 0,70."},
+    {t:"mc", q:"O que significa β = 1?", o:["Aprendizado rápido: w(J) vira I ∧ w(J) de uma vez","A rede não aprende","Só uma categoria é permitida","A vigilância vale 1"], exp:"w(J) = β·(I ∧ w(J)) + (1 − β)·w(J)."},
+    {t:"mc", q:"Quantas cores a Fuzzy ART achou no gato e na pessoa?", o:["8 no gato e 19 na pessoa","19 no gato e 8 na pessoa","2 e 2","256 e 256"], exp:"A foto da astronauta tem cores muito diferentes: preto do capacete, cinza do fundo, laranja da roupa, vermelho e azul da bandeira."},
+    {t:"mc", q:"Como a rede pintou as fotos em tamanho original?", o:["Treinou em versões reduzidas (112x75 e 85x85) e depois classificou todos os pixels originais sem aprender mais","Treinou pixel a pixel na foto inteira","Usou a ART1","Pintou à mão"], exp:"Cada pixel recebeu a cor média da sua categoria. Só 3 pixels do gato e 433 da pessoa (0,2%) não atingiram a vigilância e foram para a categoria de maior T."},
+    {t:"mc", q:"O 4º pixel do exemplo, RGB (82, 61, 68), deu casamento 2,005/3 = 0,668. O que aconteceu?", o:["Reset: escuro demais para a caixa dos marrons claros, criou a categoria 2","Ressonância na categoria 1","Foi descartado","Virou cinza"], exp:"Os 3 primeiros pixels deram 0,990 e 0,872 (ressonância) e formaram a caixa entre (0,561; 0,471; 0,408) e (0,733; 0,596; 0,494)."},
+    {gen:"fuzzy"},{gen:"fuzzy"}
+  ]},
+  { title:"Filtros de convolução", sub:"Núcleos 3x3, cinza, Sobel X −400 na pupila", qs:[
+    {t:"mc", q:"O que é a convolução discreta?", o:["Um núcleo pequeno percorre a imagem; em cada posição, multiplica os pixels pelos pesos e soma","Uma média de toda a imagem","Uma rotação da imagem","Trocar R por B"], exp:"y(i,j) = Σa Σb k(a,b)·x(i+a−1, j+b−1)."},
+    {t:"mc", q:"Qual filtro destaca bordas <b>verticais</b>?", o:["Sobel X [−1 0 1; −2 0 2; −1 0 1]","Sobel Y","Média","Gaussiano"], exp:"Ele compara a coluna da direita com a da esquerda. O Sobel Y compara baixo com cima (bordas horizontais)."},
+    {t:"mc", q:"Qual núcleo é o gaussiano do trabalho?", o:["[1 2 1; 2 4 2; 1 2 1] / 16","[0 −1 0; −1 5 −1; 0 −1 0]","[0 1 0; 1 −4 1; 0 1 0]","Todos 1/9"], exp:"Suaviza com menos perda de borda que a média. Nitidez é o [0 −1 0; −1 5 −1; 0 −1 0] e Laplaciano o [0 1 0; 1 −4 1; 0 1 0]."},
+    {t:"mc", q:"Na janela (1,1) do olho, Sobel X deu −120. O que o sinal negativo indica?", o:["Passagem de claro para escuro da esquerda para a direita (íris clara, pupila escura)","Erro de cálculo","Pixel preto","Borda horizontal"], exp:"132·(−1)+111·1 = −21; 136·(−2)+106·2 = −60; 132·(−1)+93·1 = −39. Soma −120."},
+    {t:"mc", q:"Onde fica o pico −400 do mapa de características?", o:["Exatamente na beirada da pupila","No centro da íris","No fundo da foto","No nariz do gato"], exp:"Mapa 4x4 do recorte 6x6 (linhas 53–58, colunas 81–86)."},
+    {t:"mc", q:"Por que média (118,22) e gaussiano (118,50) deram quase o valor do pixel central (118)?", o:["Porque só suavizam: numa região lisa o resultado fica perto do centro","Porque estão errados","Porque detectam bordas","Porque somam zero"], exp:"Sobel Y deu −26 (a borda ali é vertical) e o Laplaciano 6 (janela ainda na íris lisa)."},
+    {t:"mc", q:"Por que a soma dos pesos da média e da nitidez é 1?", o:["Para manter o brilho geral da imagem","Para detectar bordas","Para zerar a imagem","Por acaso"], exp:"Sobel e Laplaciano somam 0: em região lisa dão 0 e só acendem nas bordas."},
+    {gen:"gray"},{gen:"conv"},{gen:"conv"}
+  ]},
+  { title:"Camada de CNN", sub:"Tamanho da saída, ReLU, max pooling, camada densa", qs:[
+    {t:"mc", q:"Numa CNN, de onde vêm os pesos dos núcleos?", o:["São aprendidos no treinamento (no trabalho foram fixos, clássicos)","São sempre o Sobel","São sorteados e nunca mudam","Vêm da Fuzzy ART"], exp:"As primeiras camadas aprendem bordas; as seguintes, olhos, focinho, rosto."},
+    {t:"mc", q:"Por que aplicar ReLU direto no Sobel X do olho daria tudo 0?", o:["Porque todos os valores do mapa são negativos","Porque a imagem é cinza","Porque o pooling vem antes","Porque o núcleo soma 1"], exp:"Por isso a CNN aprende também o filtro com sinal trocado (−Sobel X): depois da ReLU sobra o módulo dos valores."},
+    {t:"mc", q:"Max pooling 2x2 do mapa ReLU(−Sobel X) deu quais valores?", o:["400, 366, 370 e 221","120, 46, 357, 10","387, 400, 370, 299","0, 0, 0, 0"], exp:"max(120, 387, 158, 400) = 400; max(366, 46, 328, 31) = 366; max(252, 370, 357, 299) = 370; max(221, 19, 78, 10) = 221."},
+    {t:"mc", q:"O que acontece com o tamanho no gato?", o:["150x226 → 148x224 (convolução) → 74x112 (pooling)","150x226 → 150x226 → 75x113","150x226 → 74x112 → 148x224","Não muda"], exp:"Pessoa: 256x256 → 254x254 → 127x127."},
+    {t:"mc", q:"O que vai para a camada densa?", o:["O vetor de características: a média de cada mapa depois da ReLU","A foto original","Os pesos da ART1","As 19 cores da Fuzzy ART"], exp:"Tabela 6: a pessoa tem bordas mais fortes (alto contraste) e o gato muitas bordas finas e fracas (pelos)."},
+    {t:"ord", q:"Ordene uma camada de CNN como no trabalho.", items:["Entrada: imagem em tons de cinza (0 a 255)","Convolução com o núcleo 3x3","ReLU: negativos viram 0","Max pooling 2x2","Camada densa classifica: gato ou pessoa?"], exp:"Na prática, convolução, ReLU e pooling se repetem várias vezes antes da camada densa."},
+    {t:"mc", q:"Qual a conclusão que liga ART e CNN?", o:["A convolução extrai a estrutura local (bordas e texturas) e a ART organiza os padrões em categorias, de forma estável e sem rótulos","As duas fazem a mesma coisa","A CNN substitui a ART","A ART detecta bordas melhor"], exp:"É o fechamento do trabalho."},
+    {gen:"outSize"},{gen:"pool"},{gen:"conv"}
+  ]}
+  ]
+});
+
+Object.assign(LESSONS, {
+"art:0": `
+<p>Redes neurais aprendem de dois jeitos: <b>supervisionado</b> (cada exemplo vem com a resposta certa) ou <b>não supervisionado</b> (a rede descobre sozinha como os dados se agrupam). A <b>Teoria da Ressonância Adaptativa (ART)</b>, de Carpenter e Grossberg (1987), é do segundo tipo.</p>
+<p class="key">Ela resolve o <b>dilema estabilidade × plasticidade</b>: continuar aprendendo coisas novas sem apagar o que já sabe.</p>
+<h3>As duas camadas</h3>
+<ul>
+<li><b>F1, comparação</b>: recebe a entrada e compara com o protótipo da categoria escolhida.</li>
+<li><b>F2, reconhecimento</b>: um neurônio por categoria. O de maior entrada ponderada vence.</li>
+</ul>
+<h3>Vigilância ρ (0 a 1)</h3>
+<p>Depois da escolha, a rede pergunta: a entrada é parecida o bastante com o protótipo?</p>
+<span class="f">semelhança ≥ ρ → RESSONÂNCIA: a categoria aprende
+semelhança &lt; ρ → RESET: inibe a categoria e procura outra
+nenhuma serve  → um neurônio livre vira categoria nova</span>
+<p>Vigilância <b>alta</b> = muitas categorias específicas. Vigilância <b>baixa</b> = poucas categorias gerais.</p>
+<p>No trabalho: ART1 com desenhos 7x7 de pessoas e gatos, Fuzzy ART com as cores de duas fotos e, como complemento, filtros de convolução (a base das CNNs) nas mesmas fotos.</p>`,
+
+"art:1": `
+<h3>Os dados</h3>
+<p>Seis desenhos 7x7: Pessoa 1, Gato 1, Pessoa 2, Gato 2, Pessoa 3 e Gato 3, nessa ordem. Cada um vira um vetor de 49 valores binários (1 = pixel preto). |s| é o número de pixels pretos: pessoas têm 17; gatos, 31, 29 e 34. A rede não sabe quem é quem.</p>
+<p>Parâmetros: n = 49, m = 6 categorias, L = 2, ρ = 0,5.</p>
+<h3>Equações (Fausett, 1994)</h3>
+<span class="f">início:  b(i,j) = 1/(1+n) = 1/50 = 0,02     t(j,i) = 1
+escolha: y(j) = Σ b(i,j)·s(i)
+vencedor: J = maior y(j)
+F1:      x = s AND t(J)
+teste:   |x| / |s| ≥ ρ ?
+ressonância: b(i,J) = L·x(i)/(L−1+|x|) = 2/(1+|x|)    t(J) = x
+reset:   inibe J e volta à escolha</span>
+<p>Como t vira a interseção, o protótipo guarda só a parte comum dos desenhos. Na prática, y(j) = (pixels em comum com o protótipo) × b.</p>
+<h3>O cálculo do trabalho</h3>
+<span class="f">Pessoa 1 (17): y = 0,340 em todas, empate → 1. 17/17 = 1 → b = 2/18 = 0,1111
+Gato 1 (31): y(1) = 8·0,1111 = 0,889  y(livre) = 31·0,02 = 0,620
+             vence 1: 8/31 = 0,258 &lt; 0,5 → RESET
+             vence 2: 31/31 = 1 → b = 2/32 = 0,0625
+Pessoa 2 (17): y(1) = 11·0,1111 = 1,222 → 11/17 = 0,647 → b = 2/12 = 0,1667
+Gato 2 (29): y(2) = 28·0,0625 = 1,750 → 28/29 = 0,966 → b = 2/29 = 0,0690
+Pessoa 3 (17): y(1) = 9·0,1667 = 1,500 → 9/17 = 0,529 → b = 2/10 = 0,2
+Gato 3 (34): y(2) = 28·0,0690 = 1,931 → 28/34 = 0,824 → t(2) não muda</span>
+<p class="key">O Gato 1 é o ponto da apresentação: a categoria das pessoas teve o maior y, mas o reset barrou o gato e protegeu o que a rede já sabia.</p>
+<p>Resultado: pessoas na categoria 1, gatos na 2. Uma segunda passada não mudou nada (rede estável). Desenhos novos, sem aprender: pessoa → 1 (0,529) e gato → 2 (0,824).</p>
+<p>Detalhe para revisar antes de apresentar: no <code>art1_pessoa_animal.sce</code>, o comentário da linha dos pesos iniciais ainda diz "1/26 = 0.0385". O valor que o código calcula, e que está no trabalho, é 1/50 = 0,02.</p>`,
+
+"art:2": `
+<p>O treino foi repetido com vários valores de ρ (Tabela 2 do trabalho):</p>
+<span class="f">ρ     categorias  P1 G1 P2 G2 P3 G3
+0,1   1           1  1  1  1  1  1
+0,3   2           1  2  1  2  1  2
+0,5   2           1  2  1  2  1  2
+0,6   3           1  2  1  2  3  2
+0,7   3           1  2  2  3  1  3
+0,9   5           1  2  3  2  4  5</span>
+<ul>
+<li><b>0,1</b>: tudo numa categoria (pouco exigente).</li>
+<li><b>0,3 a 0,5</b>: separa exatamente pessoas e gatos.</li>
+<li><b>0,6 em diante</b>: começa a separar variações do mesmo tipo de desenho.</li>
+<li><b>0,9</b>: 5 categorias, quase um grupo por desenho.</li>
+</ul>
+<p class="key">A vigilância é o parâmetro que controla o nível de detalhe do agrupamento.</p>`,
+
+"art:3": `
+<p>A ART1 só aceita 0 e 1. A <b>Fuzzy ART</b> (Carpenter, Grossberg e Rosen, 1991) aceita valores entre 0 e 1 e troca o AND pelo <b>mínimo</b> (∧). Cada pixel colorido é uma entrada: a = [R G B]/255.</p>
+<h3>Codificação complementar</h3>
+<span class="f">I = [a, 1 − a]      |I| = 3 sempre</span>
+<p>Assim, as 3 primeiras posições de w guardam o menor valor de cada canal aceito pela categoria e as 3 últimas guardam 1 menos o maior. Cada categoria vira uma <b>caixa de cores</b>.</p>
+<h3>Equações</h3>
+<span class="f">escolha:    T(j) = |I ∧ w(j)| / (α + |w(j)|)
+vencedor:   J = maior T
+casamento:  |I ∧ w(J)| / |I| ≥ ρ ?
+  sim → w(J) = β·(I ∧ w(J)) + (1 − β)·w(J)
+  não → reset; nenhuma serve → nova com w = I
+α = 0,001   β = 1 (aprendizado rápido)   ρ = 0,70</span>
+<p>∧ = mínimo posição a posição. |·| = soma.</p>
+<h3>Os 4 pixels do gato</h3>
+<span class="f">1: (145,122,108) → cria categoria 1, w = I
+2: (143,120,104) → T = 0,989  casamento 0,990 → ressonância
+3: (187,152,126) → T = 0,881  casamento 0,872 → ressonância
+4: (82,61,68)    → T = 0,766  casamento 2,005/3 = 0,668 → reset → categoria 2</span>
+<h3>Resultado</h3>
+<p>Treino nas fotos reduzidas (gato 112x75, pessoa 85x85) e depois classificação de todos os pixels originais, sem aprender mais. Cada pixel recebe a cor média da sua categoria. <b>Gato: 8 cores. Pessoa (astronauta Eileen Collins): 19 cores</b>, porque a foto tem preto, cinza, laranja, vermelho e azul. Só 3 pixels do gato e 433 da pessoa (0,2%) não atingiram a vigilância e foram para a categoria de maior T.</p>`,
+
+"art:4": `
+<h3>Da cor para o cinza</h3>
+<span class="f">cinza = 0,299·R + 0,587·G + 0,114·B
+olho do gato (76, 39, 13): 22,724 + 22,893 + 1,482 = 47,099 ≈ 47</span>
+<p>Gato: 150x226 pixels. Pessoa: 256x256. 0 = preto, 255 = branco.</p>
+<h3>Convolução</h3>
+<p>Um núcleo (kernel) 3x3 percorre a imagem. Em cada posição, multiplica cada pixel pelo peso na mesma posição e soma:</p>
+<span class="f">y(i,j) = Σa Σb k(a,b) · x(i+a−1, j+b−1)</span>
+<h3>Os 6 núcleos</h3>
+<span class="f">Média       todos 1/9                   suaviza
+Gaussiano   [1 2 1; 2 4 2; 1 2 1]/16    suaviza, perde menos borda
+Nitidez     [0 −1 0; −1 5 −1; 0 −1 0]   realça detalhes
+Sobel X     [−1 0 1; −2 0 2; −1 0 1]    bordas verticais
+Sobel Y     [−1 −2 −1; 0 0 0; 1 2 1]    bordas horizontais
+Laplaciano  [0 1 0; 1 −4 1; 0 1 0]      bordas em toda direção</span>
+<p>Média e nitidez somam 1 (mantêm o brilho). Sobel e Laplaciano somam 0 (dão 0 em região lisa).</p>
+<h3>Sobel X no olho do gato</h3>
+<span class="f">recorte 6x6 (íris clara à esquerda, pupila escura à direita)
+132 120 111  31  17  15
+136 118 106  19  12   8
+132 116  93  16   9   8
+...
+posição (1,1):
+132·(−1) + 120·0 + 111·1 = −21
+136·(−2) + 118·0 + 106·2 = −60
+132·(−1) + 116·0 +  93·1 = −39   soma = −120
+posição (1,2): −89 − 198 − 100 = −387
+pico do mapa 4x4: −400, na beirada da pupila</span>
+<p>Negativo = claro para escuro da esquerda para a direita. A mesma janela (1,1) com os outros filtros: média 118,22; gaussiano 118,50; nitidez 112; Sobel Y −26 (a borda é vertical); Laplaciano 6 (ainda na íris lisa); bordas √(Gx² + Gy²) = 122,78.</p>
+<p>No Scilab, a convolução foi feita sem bibliotecas: para cada um dos 9 pesos, desloca a matriz da imagem e soma peso × pixel.</p>`,
+
+"art:5": `
+<p>Uma <b>CNN</b> é uma rede feita para imagens. Em vez de ligar cada pixel a cada neurônio, passa o mesmo filtro 3x3 por toda a imagem: os 9 números do filtro são os pesos, <b>aprendidos no treino</b>. No trabalho, os filtros foram fixos (clássicos).</p>
+<h3>Tamanho da saída</h3>
+<span class="f">saída = (N − K + 2P) / S + 1
+N entrada, K núcleo, P borda extra, S passo
+recorte: (6 − 3)/1 + 1 = 4
+gato:    150x226 → 148x224
+pessoa:  256x256 → 254x254</span>
+<h3>ReLU</h3>
+<span class="f">ReLU(x) = max(0, x)</span>
+<p>O mapa do Sobel X no olho é todo negativo, então a ReLU zeraria tudo. Por isso a CNN aprende vários filtros, inclusive o de sinal trocado (−Sobel X), que depois da ReLU dá o módulo dos valores.</p>
+<h3>Max pooling 2x2</h3>
+<span class="f">max(120, 387, 158, 400) = 400
+max(366, 46, 328, 31)   = 366
+max(252, 370, 357, 299) = 370
+max(221, 19, 78, 10)    = 221</span>
+<p>16 números viram 4 e a borda forte continua. Gato: 148x224 → 74x112. Pessoa: 254x254 → 127x127.</p>
+<h3>Camada densa</h3>
+<p>A média de cada mapa depois da ReLU forma o <b>vetor de características</b>, que entra numa camada densa (um perceptron multicamadas) para classificar. A pessoa teve bordas mais fortes (ex.: Sobel X+ 33,26 contra 20,81 do gato), por causa do alto contraste; o gato tem muitas bordas finas e fracas (pelos).</p>
+<p class="key">Conclusão do trabalho: a convolução extrai a estrutura local da imagem (bordas e texturas) e a ART organiza os padrões em categorias, de forma estável, incremental e sem rótulos.</p>`
+});
+
 /* ---------- estado ---------- */
 let trackIdx = 0;
 let S = null; // sessão de jogo
@@ -1163,7 +1467,7 @@ function renderHome(){
   <header class="hero">
     <span class="eyebrow">Revisão para a prova</span>
     <h1>Revisão em Rede</h1>
-    <p class="muted">Três trilhas: redes neurais recorrentes, redes de computadores (Packet Tracer) e Aplicações para Internet, com o projeto CineSugere. Cada fase começa com uma aula curta, depois vêm as perguntas, e cada resposta traz a explicação.</p>
+    <p class="muted">Quatro trilhas: redes neurais recorrentes, redes de computadores (Packet Tracer), Aplicações para Internet com o projeto CineSugere, e ART e CNN, do trabalho de Inteligência Artificial. Cada fase começa com uma aula curta, depois vêm as perguntas, e cada resposta traz a explicação.</p>
     <svg class="signal" viewBox="0 0 600 70" preserveAspectRatio="none" aria-hidden="true"><line class="base" x1="0" y1="35" x2="600" y2="35"/><path d="${signalPath()}"/></svg>
     <span class="mono muted" style="font-size:.8rem">x(n) = sen(n + sen(n²)), o sinal do exemplo de previsão da rede de Elman</span>
   </header>
@@ -1368,5 +1672,6 @@ renderHome();
 window.__RNN_TEST__ = {G, TRACKS};
 })();
 </script>
+
 </body>
 </html>
