@@ -104,6 +104,7 @@ details.cola ul{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:co
 .field input{font:inherit;font-family:var(--f-mono);padding:10px 12px;border-radius:8px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
 .field input.right{border-color:var(--ok);background:var(--ok-soft)}
 .field input.wrong{border-color:var(--bad);background:var(--bad-soft)}
+[hidden]{display:none!important}
 .ord-pool,.ord-pick{display:flex;flex-direction:column;gap:8px}
 .ord-pick{min-height:20px}
 .ord-pick .opt{grid-template-columns:28px 1fr}
@@ -1545,7 +1546,7 @@ function renderQ(){
   }
   if (q.t==="ord"){
     S.picked = [];
-    app.querySelectorAll("#pool [data-i]").forEach(b=>b.onclick=()=>{ if(S.answered) return; S.picked.push(+b.dataset.i); b.hidden=true; drawPick(); });
+    app.querySelectorAll("#pool [data-i]").forEach(b=>b.onclick=()=>{ if(S.answered || S.picked.includes(+b.dataset.i)) return; S.picked.push(+b.dataset.i); b.hidden=true; drawPick(); });
     $("#clear").onclick=()=>{ if(S.answered) return; S.picked=[]; app.querySelectorAll("#pool [data-i]").forEach(b=>b.hidden=false); drawPick(); };
     $("#check").onclick=()=>{ const ok = S.picked.every((v,k)=>v===k); answer(ok, null); };
   }
